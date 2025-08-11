@@ -1,0 +1,210 @@
+# %%
+import math
+from pathlib import Path
+
+import polars as pl
+
+# Constants from psychometric equation
+CONVERSION_CONSTANT = 0.01157  # c_1 (W m day MJ^-1 mm^-1)
+SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER = 2448  # L_v (MJ Mg^-1)
+WATER_DENSITY = 1.0  # rho_w (Mg m^-3)
+PSYCHROMETRIC_CONSTANT = 0.067  # gamma (kPa K^-1)
+
+# Constants from power per area equation
+EVAPORATION_CONVERSION_CONSTANT = 6.42465e-4  # c_t (mols day mm^-1 m^-2 s^-1)
+
+# Other constants
+IDEAL_GAS_CONSTANT = 8.31446261815324  # R (J mol^-1 K^-1)
+WATER_VAPOR_GAS_CONSTANT = 461.5  # R_v (J kg^-1 K^-1)
+
+
+def calculate_saturation_vapor_pressure(T: float) -> float:
+    # uses the Buck equation
+
+    T_celsius = T - 273.15
+
+    # in hPa = kPa/10
+    e_s_hPa = 6.1121 * math.exp(
+        (18.678 - T_celsius / 234.5) * T_celsius / (257.14 + T_celsius)
+    )
+    return e_s_hPa / 10
+
+
+def calculate_Delta(
+    *,
+    T: float,
+    e_s: float | None = None,
+    L_v: float = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
+    R_v: float = WATER_VAPOR_GAS_CONSTANT,
+) -> float:
+    """
+    Calculate the slope of saturation vapor pressure curve (delta) using de_s/dT = L_v(T)*e_s / (R_v * T^2).
+
+    Args:
+        T: temperature (K)
+        e_s: saturation vapor pressure (kPa)
+        L_v: latent heat of evaporation of water (MJ/Mg)
+        R_v: gas constant of water vapor (J kg^-1 K^-1)
+
+    Returns:
+        Delta: slope of saturation vapor pressure curve (kPa K^-1)
+    """
+    # Convert L_v from MJ/Mg to J/kg
+    L_v_j_kg = L_v * 1000
+
+    if e_s is None:
+        e_s = calculate_saturation_vapor_pressure(T)
+
+    Delta = (L_v_j_kg * e_s) / (R_v * T**2)
+
+    return Delta
+
+
+def calculate_evaporation_rate(
+    *,
+    R_n: float,
+    delta: float,
+    u_a: float,
+    T_mean: float,
+    rel_hum: float,
+    c_t: float = CONVERSION_CONSTANT,
+    L_v: float = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
+    rho_w: float = WATER_DENSITY,
+    gamma: float = PSYCHROMETRIC_CONSTANT,
+) -> float:
+    """
+    Calculate evaporation rate of water surface (E_pr) using the psychometric equation.
+
+    Args:
+        R_n: net radiation above the surface (W m^-2)
+        delta: slope of the saturated vapor pressure curve (kPa K^-1)
+        u_a: wind speed (m s^-1)
+        T_mean: daily mean temperature (°C)
+        rel_hum: relative humidity ratio (0-1)
+        c_t: conversion constant (0.01157 W m day MJ^-1 mm^-1)
+        L_v: latent heat of vaporization (2448 MJ Mg^-1)
+        rho_w: density of water (1.0 Mg m^-3)
+        gamma: psychrometric constant (0.067 kPa K^-1)
+
+    Returns:
+        E_pr: evaporation rate of water surface (mm day^-1)
+    """
+
+    e_star = calculate_saturation_vapor_pressure(T=T_mean)
+    D_a = (1 - rel_hum) * e_star
+
+    numerator = delta * R_n + 2.6 * c_t * L_v * rho_w * gamma * (1 + 0.54 * u_a) * D_a
+    denominator = delta + gamma
+
+    E_pr = numerator / (c_t * L_v * rho_w * denominator)
+
+    return E_pr
+
+
+def calculate_evaporation_rate_from_kwargs(kwargs: dict[str, float]) -> float:
+    R_n = kwargs["terrestrial_radiation (W/m²)"]
+    delta = kwargs["Delta"]
+    u_a = kwargs["wind_speed_10m (m/s)"]
+    T_mean = kwargs["temperature_2m (K)"]
+    rel_hum = kwargs["relative_humidity_2m (frac)"]
+
+    return calculate_evaporation_rate(
+        R_n=R_n, delta=delta, u_a=u_a, T_mean=T_mean, rel_hum=rel_hum
+    )
+
+
+def calculate_power_per_area(
+    evap_rate: float,
+    T_air: float,
+    rel_hum_wet: float,
+    rel_hum_air: float,
+    c_t: float = EVAPORATION_CONVERSION_CONSTANT,
+    R: float = IDEAL_GAS_CONSTANT,
+) -> float:
+    """
+    Calculate power per area using the given equation.
+
+    Args:
+        evap_rate: estimated evaporation rate of water surface (mm day^-1)
+        T_air: temperature of the air (K)
+        RH_wet: relative humidity in the saturated zone above evaporating water (0.95-1.0)
+        RH_air: ambient relative humidity in the air
+        c_t: conversion constant for evaporation rate (6.42465 * 10^-4 mols day mm^-1 m^-2 s^-1)
+        R: ideal gas constant (8.31 J mol^-1 K^-1)
+
+    Returns:
+        Power per area (W m^-2)
+    """
+
+    power_per_area = c_t * evap_rate * R * T_air * math.log(rel_hum_wet / rel_hum_air)
+
+    return power_per_area
+
+
+def calculate_power_per_area_from_kwargs(kwargs: dict[str, float]) -> float:
+    evap_rate = kwargs["evap_rate"]
+    T_air = kwargs["temperature_2m (K)"]
+    rel_hum_wet = kwargs.get("rel_hum_wet", 0.99)
+    rel_hum_air = kwargs["relative_humidity_2m (frac)"]
+
+    return calculate_power_per_area(
+        evap_rate=evap_rate,
+        T_air=T_air,
+        rel_hum_wet=rel_hum_wet,
+        rel_hum_air=rel_hum_air,
+    )
+
+
+def get_df(path: str | Path | None = None) -> pl.DataFrame:
+    if path is None:
+        path = "./open-meteo-40.81N74.02W49m.csv"
+
+    data_cols = [
+        "temperature_2m (K)",
+        "Delta",
+        "relative_humidity_2m (frac)",
+        "wind_speed_10m (m/s)",
+        "terrestrial_radiation (W/m²)",
+    ]
+
+    df = (
+        pl.read_csv(path, skip_lines=3)
+        .with_columns(
+            pl.from_epoch("time"),
+            (pl.col("temperature_2m (°C)") + 273.15).alias("temperature_2m (K)"),
+            (pl.col("wind_speed_10m (km/h)") * 1000 / 3600).alias(
+                "wind_speed_10m (m/s)"
+            ),
+            (pl.col("relative_humidity_2m (%)") / 100).alias(
+                "relative_humidity_2m (frac)"
+            ),
+        )
+        .with_columns(
+            pl.col("temperature_2m (K)")
+            .map_elements(lambda T: calculate_Delta(T=T), return_dtype=pl.Float64)
+            .alias("Delta")
+        )
+        .with_columns(
+            pl.struct(data_cols)
+            .map_elements(
+                calculate_evaporation_rate_from_kwargs, return_dtype=pl.Float64
+            )
+            .alias("evap_rate"),
+        )
+        .with_columns(
+            pl.struct(*data_cols, "evap_rate")
+            .map_elements(calculate_power_per_area_from_kwargs, return_dtype=pl.Float64)
+            .alias("power (W/m^2)")
+        )
+        .with_columns((pl.col("power (W/m^2)") * 3600 / 1000).alias("energy (kJ/m^2)"))
+    )
+
+    return df
+
+
+def main():
+    return get_df()
+
+
+if __name__ == "__main__":
+    print(main())
