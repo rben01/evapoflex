@@ -3,6 +3,10 @@ import math
 from pathlib import Path
 
 import polars as pl
+import altair as alt
+from IPython.display import display
+
+_ = alt.data_transformers.enable("vegafusion")
 
 # Constants from psychometric equation
 CONVERSION_CONSTANT = 0.01157  # c_1 (W m day MJ^-1 mm^-1)
@@ -16,6 +20,9 @@ EVAPORATION_CONVERSION_CONSTANT = 6.42465e-4  # c_t (mols day mm^-1 m^-2 s^-1)
 # Other constants
 IDEAL_GAS_CONSTANT = 8.31446261815324  # R (J mol^-1 K^-1)
 WATER_VAPOR_GAS_CONSTANT = 461.5  # R_v (J kg^-1 K^-1)
+
+
+CSV_FILE = "./weather-data.csv"
 
 
 def calculate_saturation_vapor_pressure(T: float) -> float:
@@ -157,7 +164,7 @@ def calculate_power_per_area_from_kwargs(kwargs: dict[str, float]) -> float:
 
 def get_df(path: str | Path | None = None) -> pl.DataFrame:
     if path is None:
-        path = "./open-meteo-40.81N74.02W49m.csv"
+        path = CSV_FILE
 
     data_cols = [
         "temperature_2m (K)",
@@ -170,7 +177,7 @@ def get_df(path: str | Path | None = None) -> pl.DataFrame:
     df = (
         pl.read_csv(path, skip_lines=3)
         .with_columns(
-            pl.from_epoch("time"),
+            pl.from_epoch("time") - pl.duration(hours=4),
             (pl.col("temperature_2m (°C)") + 273.15).alias("temperature_2m (K)"),
             (pl.col("wind_speed_10m (km/h)") * 1000 / 3600).alias(
                 "wind_speed_10m (m/s)"
@@ -202,9 +209,43 @@ def get_df(path: str | Path | None = None) -> pl.DataFrame:
     return df
 
 
+def get_lat_lon(path: str | Path | None = None) -> tuple[float, float]:
+    if path is None:
+        path = CSV_FILE
+
+    df = pl.read_csv(path, n_rows=2, n_threads=1, truncate_ragged_lines=True)
+
+    row = df.row(0, named=True)
+    return (row["latitude"], row["longitude"])
+
+
+def plot_df(df: pl.DataFrame, *, rolling=False) -> alt.Chart:
+    (lat, lon) = get_lat_lon()
+
+    if rolling:
+        df = (
+            df.rolling("time", period="2w", offset="0d")
+            .agg(pl.col("power (W/m^2)").mean())
+            .filter(pl.col("time") < pl.datetime(year=2025, month=8, day=1))
+        )
+
+    return (
+        alt.Chart(df)
+        .mark_line()
+        .encode(
+            x=alt.X(
+                "time", axis=alt.Axis(format="%d %b", labelAngle=-60, tickCount=15)
+            ),
+            y="power (W/m^2)",
+        )
+        .properties(title=f"Evaporative power in NYC ({lat}, {lon}), Aug '24–Jul '25")
+    )
+
+
 def main():
-    return get_df()
+    df = get_df()
+    _ = display(plot_df(df, rolling=True))
 
 
 if __name__ == "__main__":
-    print(main())
+    main()
