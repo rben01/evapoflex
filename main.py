@@ -1,6 +1,7 @@
 # %%
 import math
 from pathlib import Path
+import datetime
 
 import polars as pl
 import altair as alt
@@ -26,8 +27,15 @@ CSV_FILE = "./weather-data.csv"
 
 
 def calculate_saturation_vapor_pressure(T: float) -> float:
-    # uses the Buck equation
+    """
+    Calculate saturation vapor pressure using the Buck equation.
 
+    Args:
+        T: temperature in Kelvin (K)
+
+    Returns:
+        Saturation vapor pressure (kPa)
+    """
     T_celsius = T - 273.15
 
     # in hPa = kPa/10
@@ -80,7 +88,7 @@ def calculate_evaporation_rate(
     gamma: float = PSYCHROMETRIC_CONSTANT,
 ) -> float:
     """
-    Calculate evaporation rate of water surface (E_pr) using the psychometric equation.
+    Calculate evaporation rate of water surface (E_pr) using the psychrometric equation.
 
     Args:
         R_n: net radiation above the surface (W m^-2)
@@ -109,6 +117,20 @@ def calculate_evaporation_rate(
 
 
 def calculate_evaporation_rate_from_kwargs(kwargs: dict[str, float]) -> float:
+    """
+    Extract parameters from kwargs dict and calculate evaporation rate.
+
+    Args:
+        kwargs: Dictionary containing weather data columns:
+            - terrestrial_radiation (W/m²): net radiation above surface
+            - Delta: slope of saturated vapor pressure curve (kPa K^-1)
+            - wind_speed_10m (m/s): wind speed at 10m height
+            - temperature_2m (K): air temperature at 2m height
+            - relative_humidity_2m (frac): relative humidity as fraction
+
+    Returns:
+        Evaporation rate (mm day^-1)
+    """
     R_n = kwargs["terrestrial_radiation (W/m²)"]
     delta = kwargs["Delta"]
     u_a = kwargs["wind_speed_10m (m/s)"]
@@ -149,6 +171,19 @@ def calculate_power_per_area(
 
 
 def calculate_power_per_area_from_kwargs(kwargs: dict[str, float]) -> float:
+    """
+    Extract parameters from kwargs dict and calculate power per area.
+
+    Args:
+        kwargs: Dictionary containing calculated data:
+            - evap_rate: evaporation rate (mm day^-1)
+            - temperature_2m (K): air temperature at 2m height
+            - relative_humidity_2m (frac): ambient relative humidity as fraction
+            - rel_hum_wet (optional): relative humidity in saturated zone (defaults to 0.99)
+
+    Returns:
+        Power per area (W m^-2)
+    """
     evap_rate = kwargs["evap_rate"]
     T_air = kwargs["temperature_2m (K)"]
     rel_hum_wet = kwargs.get("rel_hum_wet", 0.99)
@@ -163,6 +198,21 @@ def calculate_power_per_area_from_kwargs(kwargs: dict[str, float]) -> float:
 
 
 def get_df(path: str | Path | None = None) -> pl.DataFrame:
+    """
+    Load and process weather data CSV into analysis DataFrame.
+
+    Transforms raw weather data by:
+    - Converting units (temperature to K, wind speed to m/s, humidity to fraction)
+    - Calculating Delta (slope of saturation vapor pressure curve)
+    - Computing evaporation rates using psychrometric equations
+    - Calculating power per area and energy density
+
+    Args:
+        path: Path to CSV file (defaults to CSV_FILE constant)
+
+    Returns:
+        Processed DataFrame with calculated evaporation rates and power metrics
+    """
     if path is None:
         path = CSV_FILE
 
@@ -210,6 +260,15 @@ def get_df(path: str | Path | None = None) -> pl.DataFrame:
 
 
 def get_lat_lon(path: str | Path | None = None) -> tuple[float, float]:
+    """
+    Extract latitude and longitude from weather data CSV header.
+
+    Args:
+        path: Path to CSV file (defaults to CSV_FILE constant)
+
+    Returns:
+        Tuple of (latitude, longitude) coordinates
+    """
     if path is None:
         path = CSV_FILE
 
@@ -219,22 +278,47 @@ def get_lat_lon(path: str | Path | None = None) -> tuple[float, float]:
     return (row["latitude"], row["longitude"])
 
 
-def plot_df(df: pl.DataFrame, *, rolling=False) -> alt.Chart:
+def plot_df(
+    df: pl.DataFrame,
+    *,
+    rolling=False,
+    date_range: tuple[datetime.date, datetime.date] | None = None,
+) -> alt.Chart:
+    """
+    Create a time series line chart of evaporative power data.
+
+    Args:
+        df: DataFrame with weather and power calculations
+        rolling: If True, apply 1-week rolling average to smooth data
+        date_range: Optional tuple of (start_date, end_date) to filter data
+
+    Returns:
+        Altair Chart object with time series visualization
+    """
     (lat, lon) = get_lat_lon()
 
     if rolling:
         df = (
-            df.rolling("time", period="2w", offset="0d")
+            df.rolling("time", period="1w", offset="0d")
             .agg(pl.col("power (W/m^2)").mean())
             .filter(pl.col("time") < pl.datetime(year=2025, month=8, day=1))
         )
+
+    if date_range is not None:
+        df = df.filter(pl.col("time").is_between(*date_range))
 
     return (
         alt.Chart(df)
         .mark_line()
         .encode(
             x=alt.X(
-                "time", axis=alt.Axis(format="%d %b", labelAngle=-60, tickCount=15)
+                "time",
+                axis=alt.Axis(
+                    format="%b %-d",
+                    labelAngle=-40,
+                    labelOverlap=True,
+                    labelSeparation=-10,
+                ),
             ),
             y="power (W/m^2)",
         )
@@ -243,8 +327,27 @@ def plot_df(df: pl.DataFrame, *, rolling=False) -> alt.Chart:
 
 
 def main():
+    """
+    Main entry point that loads data and displays rolling average power chart.
+
+    Creates a visualization of evaporative power for Feb-June 2025 period
+    with 1-week rolling average smoothing.
+    """
     df = get_df()
-    _ = display(plot_df(df, rolling=True))
+    charts = {
+        "full_year_rolling_week": plot_df(df, rolling=True),
+        "june_2025": plot_df(
+            df,
+            rolling=False,
+            date_range=(datetime.date(2025, 6, 1), datetime.datetime(2025, 6, 30)),
+        ),
+    }
+    for name, chart in charts.items():
+        _ = display(chart)
+        chart.save(f"power_{name}.pdf")
+
+    total_energy = df.select(energy=pl.col("power (W/m^2)").sum() * 3600).item()
+    print(f"Total energy per area for the year: {total_energy} J/m^2")
 
 
 if __name__ == "__main__":
