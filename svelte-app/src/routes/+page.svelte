@@ -41,10 +41,29 @@
 	}
 
 	$effect(() => {
-		const onResize = () => calculateGraphHeights();
+		if (!graphsContainer) return;
+		
+		const onResize = () => {
+			// Small delay to ensure DOM has updated
+			requestAnimationFrame(() => calculateGraphHeights());
+		};
+		
+		// Initial calculation
 		calculateGraphHeights();
+		
+		// Listen to window resize
 		window.addEventListener('resize', onResize);
-		return () => window.removeEventListener('resize', onResize);
+		
+		// Also use ResizeObserver for more reliable detection
+		const resizeObserver = new ResizeObserver(() => {
+			requestAnimationFrame(() => calculateGraphHeights());
+		});
+		resizeObserver.observe(graphsContainer);
+		
+		return () => {
+			window.removeEventListener('resize', onResize);
+			resizeObserver.disconnect();
+		};
 	});
 </script>
 

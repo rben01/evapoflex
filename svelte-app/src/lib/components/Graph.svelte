@@ -49,11 +49,15 @@
 
     const yMax = Math.max(0, yAxisMax || 1);
     const y = d3.scaleLinear().domain([0, yMax]).range([innerHeight, 0]);
-    // Build ticks from 0 to yMax inclusive
-    const desiredTicks = 6;
-    const step = Math.max(1, Math.round(d3.tickStep(0, yMax, desiredTicks)));
-    let yTicks = d3.range(0, yMax + step, step);
-    if (yTicks[yTicks.length - 1] !== yMax) yTicks = [...yTicks, yMax];
+    
+    // Simple, clean tick generation
+    const tickCount = 5;
+    const step = yMax / tickCount;
+    const yTicks = [];
+    for (let i = 0; i <= tickCount; i++) {
+      yTicks.push(Math.round(i * step * 10) / 10); // Round to 1 decimal
+    }
+    
     const yAxis = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
 
     // Bottom X axis as a baseline for reference
