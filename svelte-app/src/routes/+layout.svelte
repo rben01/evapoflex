@@ -1,0 +1,29 @@
+<script lang="ts">
+	import type { Snippet } from "svelte";
+	import "../app.css";
+
+	let { children }: { children?: Snippet } = $props();
+</script>
+
+<main>
+	{@render children?.()}
+</main>
+
+<style>
+	:global(body) {
+		margin: 0;
+		padding: 0;
+		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+		background-color: white; /* full-bleed page background */
+	}
+
+	main {
+		width: 100%;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 20px;
+		background-color: transparent; /* let body provide background */
+		min-height: 100vh;
+		box-shadow: none;
+	}
+</style>
