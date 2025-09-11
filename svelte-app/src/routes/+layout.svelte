@@ -18,10 +18,11 @@
 	}
 
 	main {
-		width: 100%;
+		--horizontal-padding: 20px;
+		width: calc(100% - 2 * var(--horizontal-padding));
 		max-width: 1200px;
 		margin: 0 auto;
-		padding: 20px;
+		padding: var(--horizontal-padding);
 		background-color: transparent; /* let body provide background */
 		min-height: 100vh;
 		box-shadow: none;

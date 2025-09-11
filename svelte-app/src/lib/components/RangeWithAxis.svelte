@@ -22,7 +22,7 @@
 	const tickCount = 6;
 	const ticks = $derived.by(() => {
 		const range = max - min;
-		const count = Math.max(2, tickCount);
+    const count = Math.max(2, tickCount);
 		const stepVal = range / (count - 1);
 		return Array.from({ length: count }, (_, i) => min + i * stepVal);
 	});
@@ -51,6 +51,7 @@
 <style>
 	.control {
 		margin-bottom: 24px;
+		max-width: 100%;
 	}
 	.label {
 		display: block;
@@ -65,12 +66,14 @@
 
 	input[type="range"] {
 		width: 100%;
+		max-width: 100%;
 	}
 
 	.axis {
 		position: relative;
 		height: 28px;
 		margin-top: 6px;
+		overflow: hidden; /* prevent tick labels from causing horizontal scroll */
 	}
 
 	.tick {
@@ -79,6 +82,15 @@
 		text-align: center;
 		color: #333;
 		font-size: 0.85rem;
+		white-space: nowrap;
+	}
+
+	/* keep edge labels inside the container */
+	.tick:first-child {
+		transform: translateX(0%);
+	}
+	.tick:last-child {
+		transform: translateX(-100%);
 	}
 
 	.tick-mark {

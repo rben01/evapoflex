@@ -69,7 +69,7 @@
 	.layout {
 		display: grid;
 		grid-template-columns: 280px 1fr;
-		gap: 24px;
+		gap: 12px; /* narrower gap between sidebar and graph */
 		align-items: start;
 	}
 
@@ -77,13 +77,26 @@
 		background: #fafafa;
 		border: 1px solid #e5e5e5;
 		border-radius: 8px;
-		padding: 16px 30px 8px 30px;
+		padding: 16px 30px 16px 30px;
 		margin-top: 16px;
-		position: sticky;
 		top: 12px;
+		min-width: 0; /* prevent grid overflow on small screens */
 	}
 
 	.main {
 		overflow: auto;
+		min-width: 0; /* prevent grid overflow */
+	}
+
+	/* Remove space after the last slider */
+	:global(.sidebar > .control:last-child) {
+		margin-bottom: 0;
+	}
+
+	@media (max-width: 800px) {
+		.layout {
+			grid-template-columns: 1fr;
+			gap: 16px;
+		}
 	}
 </style>
