@@ -1,13 +1,47 @@
 <script lang="ts">
 	import Graph from "$lib/components/Graph.svelte";
 	import RangeWithAxis from "$lib/components/RangeWithAxis.svelte";
+	import {
+		calculateDelta,
+		calculateEvaporationRate,
+		calculatePowerPerArea,
+		SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
+	} from "$lib/calculations.js";
 
 	let latitude = $state(0);
 	let airTemperature = $state(20);
 	let windSpeed = $state(5);
 	let relativeHumidity = $state(50);
 
-	// Graphs will use placeholder data for now
+	// Calculate derived values for the graphs
+	const temperatureK = $derived(airTemperature + 273.15);
+	const windSpeedMS = $derived((windSpeed * 1609.34) / 3600); // mph to m/s
+	const relativeHumidityFraction = $derived(relativeHumidity / 100);
+	const netRadiation = $derived(200); // Assumed constant for now (W/m²)
+
+	// Thermodynamic calculations
+	const delta = $derived(calculateDelta(temperatureK));
+	const evaporationRate = $derived(
+		calculateEvaporationRate(
+			netRadiation,
+			delta,
+			windSpeedMS,
+			temperatureK,
+			relativeHumidityFraction,
+		),
+	);
+	const totalLatentEnergy = $derived(
+		(evaporationRate * SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER * 1000000) /
+			(24 * 3600),
+	); // Convert to W/m²
+	const maxEnginePower = $derived(
+		calculatePowerPerArea(
+			evaporationRate,
+			temperatureK,
+			0.99,
+			relativeHumidityFraction,
+		),
+	);
 
 	const fmt = (n: number) => `${Math.round(n)}`;
 
@@ -122,29 +156,29 @@
 				style={`height: ${individualGraphHeight}px`}
 			>
 				<Graph
-					title="Relative Humidity"
-					units="%"
+					title="Total Latent Energy"
+					units="W/m²"
+					yAxisMax={900}
+					fillColor="#e74c3c"
+					currentValue={totalLatentEnergy}
+				/>
+			</div>
+			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
+				<Graph
+					title="Daily Evaporation"
+					units="mm/day"
+					yAxisMax={50}
+					fillColor="#3498db"
+					currentValue={evaporationRate}
+				/>
+			</div>
+			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
+				<Graph
+					title="Maximum Engine Power"
+					units="W/m²"
 					yAxisMax={100}
-					fillColor="#4682b4"
-					currentValue={relativeHumidity}
-				/>
-			</div>
-			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
-				<Graph
-					title="Air Temperature"
-					units="°C"
-					yAxisMax={40}
-					fillColor="#e67e22"
-					currentValue={airTemperature}
-				/>
-			</div>
-			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
-				<Graph
-					title="Wind Speed"
-					units="mph"
-					yAxisMax={15}
-					fillColor="#16a085"
-					currentValue={windSpeed}
+					fillColor="#2ecc71"
+					currentValue={maxEnginePower}
 				/>
 			</div>
 		</div>
@@ -162,7 +196,7 @@
 
 	.layout {
 		display: grid;
-		grid-template-columns: 280px minmax(0, 1fr);
+		grid-template-columns: 300px minmax(0, 1fr);
 		gap: 12px;
 		align-items: start;
 		width: 100%;
