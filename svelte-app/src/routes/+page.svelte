@@ -153,8 +153,8 @@
 		/>
 		<RangeWithAxis
 			label="Relative Humidity (%)"
-			min={0}
-			max={100}
+			min={5}
+			max={95}
 			step={1}
 			bind:value={relativeHumidityPct}
 			format={fmt}
