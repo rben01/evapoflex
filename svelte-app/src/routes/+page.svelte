@@ -169,7 +169,7 @@
 				<Graph
 					title="Total Latent Energy"
 					units="W/m²"
-					yAxisMax={900}
+					yAxisMax={1000}
 					fillColor="#e74c3c"
 					currentValue={totalLatentEnergy}
 				/>
@@ -178,7 +178,7 @@
 				<Graph
 					title="Daily Evaporation"
 					units="mm/day"
-					yAxisMax={50}
+					yAxisMax={40}
 					fillColor="#3498db"
 					currentValue={evaporationRate}
 				/>
@@ -187,7 +187,7 @@
 				<Graph
 					title="Maximum Engine Power"
 					units="W/m²"
-					yAxisMax={100}
+					yAxisMax={200}
 					fillColor="#2ecc71"
 					currentValue={maxEnginePower}
 				/>
