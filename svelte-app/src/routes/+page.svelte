@@ -8,36 +8,39 @@
 		SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
 	} from "$lib/calculations.js";
 
-	let latitude = $state(0);
-	let airTemperature = $state(20);
-	let windSpeed = $state(5);
-	let relativeHumidity = $state(50);
+	let latitudeDeg = $state(0);
+	let airTemperatureDegC = $state(20);
+	let windSpeedMps = $state(5);
+	let relativeHumidityPct = $state(50);
 
 	// Calculate derived values for the graphs
-	const temperatureK = $derived(airTemperature + 273.15);
-	const windSpeedMS = $derived((windSpeed * 1609.34) / 3600); // mph to m/s
-	const relativeHumidityFraction = $derived(relativeHumidity / 100);
+	const airTemperatureK = $derived(airTemperatureDegC + 273.15);
+	const relativeHumidityFraction = $derived(relativeHumidityPct / 100);
 	const netRadiation = $derived(200); // Assumed constant for now (W/m²)
 
 	// Thermodynamic calculations
-	const delta = $derived(calculateDelta(temperatureK));
+	const delta = $derived(calculateDelta(airTemperatureK));
 	const evaporationRate = $derived(
 		calculateEvaporationRate(
 			netRadiation,
 			delta,
-			windSpeedMS,
-			temperatureK,
+			windSpeedMps,
+			airTemperatureK,
 			relativeHumidityFraction,
 		),
 	);
+	// We have latent heat (L_v, J/g), evap. rate (Er, mm/day), density of water (1 g/cm^3). Want
+	// W/m^2. \
+	// (L_v [J/g])(Er [mm/day])(day/(24*3600s))(0.1 cm/mm)(1 g/cm^3)(100 cm/m)^2
+	// = L_v * Er * (1k / (24*3600))
 	const totalLatentEnergy = $derived(
-		(evaporationRate * SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER * 1000000) /
+		(evaporationRate * SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER * 1000) /
 			(24 * 3600),
-	); // Convert to W/m²
+	);
 	const maxEnginePower = $derived(
 		calculatePowerPerArea(
 			evaporationRate,
-			temperatureK,
+			airTemperatureK,
 			0.99,
 			relativeHumidityFraction,
 		),
@@ -121,7 +124,7 @@
 			min={-90}
 			max={90}
 			step={1}
-			bind:value={latitude}
+			bind:value={latitudeDeg}
 			format={fmt}
 		/>
 		<RangeWithAxis
@@ -129,15 +132,15 @@
 			min={-20}
 			max={40}
 			step={1}
-			bind:value={airTemperature}
+			bind:value={airTemperatureDegC}
 			format={fmt}
 		/>
 		<RangeWithAxis
-			label="Wind Speed (mph)"
+			label="Wind Speed (m/s)"
 			min={0}
 			max={15}
 			step={1}
-			bind:value={windSpeed}
+			bind:value={windSpeedMps}
 			format={fmt}
 		/>
 		<RangeWithAxis
@@ -145,7 +148,7 @@
 			min={0}
 			max={100}
 			step={1}
-			bind:value={relativeHumidity}
+			bind:value={relativeHumidityPct}
 			format={fmt}
 		/>
 	</div>

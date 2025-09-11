@@ -131,36 +131,3 @@ export function calculatePowerPerArea(
 
 	return power_per_area;
 }
-
-/**
- * Extract parameters from weather data object and calculate evaporation rate.
- *
- * @param data - Object containing weather data columns
- * @returns Evaporation rate (mm day^-1)
- */
-export function calculateEvaporationRateFromParams(data: WeatherData): number {
-	const R_n = data["terrestrial_radiation (W/m²)"];
-	const delta = data["Delta"];
-	const u_a = data["wind_speed_10m (m/s)"];
-	const T_mean = data["temperature_2m (K)"];
-	const rel_hum = data["relative_humidity_2m (frac)"];
-
-	return calculateEvaporationRate(R_n, delta, u_a, T_mean, rel_hum);
-}
-
-/**
- * Extract parameters from calculation data object and calculate power per area.
- *
- * @param data - Object containing calculated data
- * @returns Power per area (W m^-2)
- */
-export function calculatePowerPerAreaFromParams(
-	data: PowerCalculationData,
-): number {
-	const evap_rate = data.evap_rate;
-	const T_air = data["temperature_2m (K)"];
-	const rel_hum_wet = data.rel_hum_wet ?? 0.99;
-	const rel_hum_air = data["relative_humidity_2m (frac)"];
-
-	return calculatePowerPerArea(evap_rate, T_air, rel_hum_wet, rel_hum_air);
-}
