@@ -281,7 +281,7 @@ def get_lat_lon(path: str | Path | None = None) -> tuple[float, float]:
 def plot_df(
     df: pl.DataFrame,
     *,
-    rolling=False,
+    rolling: str | None = None,
     date_range: tuple[datetime.date, datetime.date] | None = None,
 ) -> alt.Chart:
     """
@@ -297,9 +297,9 @@ def plot_df(
     """
     (lat, lon) = get_lat_lon()
 
-    if rolling:
+    if rolling is not None:
         df = (
-            df.rolling("time", period="1w", offset="0d")
+            df.rolling("time", period=rolling, offset="0d")
             .agg(pl.col("power (W/m^2)").mean())
             .filter(pl.col("time") < pl.datetime(year=2025, month=8, day=1))
         )
@@ -335,10 +335,10 @@ def main():
     """
     df = get_df()
     charts = {
-        "full_year_rolling_week": plot_df(df, rolling=True),
+        "full_year_rolling_month": plot_df(df, rolling="1mo"),
         "june_2025": plot_df(
             df,
-            rolling=False,
+            rolling="1d",
             date_range=(datetime.date(2025, 6, 1), datetime.datetime(2025, 6, 30)),
         ),
     }
