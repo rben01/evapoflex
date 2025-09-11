@@ -1,106 +1,144 @@
 <script lang="ts">
-	import * as d3 from "d3";
+  import * as d3 from "d3";
 
-	let container: HTMLDivElement;
-	let width = 800;
-	let height = 500;
+  let container: HTMLDivElement;
+  let width = $state(800);
+  let height = $state(500);
 
-	type Props = {
-		title: string;
-		units: string;
-		yAxisMax: number;
-		fillColor: string;
-		currentValue: number;
-	};
-	const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
+  type Props = {
+    title: string;
+    units: string;
+    yAxisMax: number;
+    fillColor: string;
+    currentValue: number;
+  };
+  const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
 
-	$effect(() => {
-		const margin = { top: 16, right: 24, bottom: 40, left: 56 };
-		const innerWidth = width - margin.left - margin.right;
-		const innerHeight = height - margin.top - margin.bottom;
+  // Resize observer to make the chart responsive to its container
+  $effect(() => {
+    if (!container) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width ?? width;
+      width = Math.max(260, Math.round(w));
+      height = Math.max(200, Math.round(width * 0.6));
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  });
 
-		d3.select(container).select("svg").remove();
+  $effect(() => {
+    const margin = { top: 16, right: 24, bottom: 40, left: 80 };
+    const innerWidth = width - margin.left - margin.right;
+    const innerHeight = height - margin.top - margin.bottom;
 
-		const svg = d3
-			.select(container)
-			.append("svg")
-			.attr("width", width)
-			.attr("height", height)
-			.style("border", "1px solid #eee");
+    d3.select(container).select("svg").remove();
 
-		const g = svg
-			.append("g")
-			.attr("transform", `translate(${margin.left},${margin.top})`);
+    const svg = d3
+      .select(container)
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .style("border", "1px solid #eee");
 
-		const yMax = Math.max(0, yAxisMax || 1);
-		const y = d3
-			.scaleLinear()
-			.domain([0, yMax])
-			.nice()
-			.range([innerHeight, 0]);
-		const yAxis = d3.axisLeft(y).ticks(6).tickSizeOuter(0);
+    const g = svg
+      .append("g")
+      .attr("transform", `translate(${margin.left},${margin.top})`);
 
-		g.append("g").attr("class", "y-axis").call(yAxis);
+    const yMax = Math.max(0, yAxisMax || 1);
+    const y = d3.scaleLinear().domain([0, yMax]).range([innerHeight, 0]);
+    // Build ticks from 0 to yMax inclusive
+    const desiredTicks = 6;
+    const step = Math.max(1, Math.round(d3.tickStep(0, yMax, desiredTicks)));
+    let yTicks = d3.range(0, yMax + step, step);
+    if (yTicks[yTicks.length - 1] !== yMax) yTicks = [...yTicks, yMax];
+    const yAxis = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
 
-		// Axis label (units)
-		g.append("text")
-			.attr("class", "y-label")
-			.attr("x", 0)
-			.attr("y", -8)
-			.attr("fill", "#333")
-			.attr("text-anchor", "start")
-			.style("font-size", "12px")
-			.text(units);
+    // Bottom X axis as a baseline for reference
+    const x = d3.scaleLinear().domain([0, 1]).range([0, innerWidth]);
+    const xAxis = d3.axisBottom(x).ticks(5).tickFormat(() => "");
+    g
+      .append("g")
+      .attr("class", "x-axis")
+      .attr("transform", `translate(0,${innerHeight})`)
+      .call(xAxis);
 
-		// Title inside svg
-		svg.append("text")
-			.attr("x", margin.left)
-			.attr("y", 12)
-			.attr("fill", "#2c3e50")
-			.style("font-size", "14px")
-			.style("font-weight", 600)
-			.text(title);
+    // Left Y axis with ticks from 0..yAxisMax
+    g.append("g").attr("class", "y-axis").call(yAxis);
 
-		// Single vertical bar representing current value
-		const barWidth = Math.min(120, innerWidth * 0.25);
-		const xBar = Math.max(10, (innerWidth - barWidth) / 2);
-		const clamped = Math.max(0, Math.min(currentValue ?? 0, yMax));
-		g.append("rect")
-			.attr("class", "value-bar")
-			.attr("x", xBar)
-			.attr("y", y(clamped))
-			.attr("width", barWidth)
-			.attr("height", innerHeight - y(clamped))
-			.attr("fill", fillColor || "steelblue")
-			.attr("opacity", 0.9);
+    // Y-axis title, centered and rotated 90 degrees
+    g
+      .append("text")
+      .attr("class", "y-title")
+      .attr(
+        "transform",
+        `translate(${-margin.left + 18}, ${innerHeight / 2}) rotate(-90)`
+      )
+      .attr("text-anchor", "middle")
+      .attr("fill", "#2c3e50")
+      .style("font-size", "13px")
+      .style("font-weight", 600)
+      .text(`${title} (${units})`);
 
-		// Numeric label of current value
-		g.append("text")
-			.attr("class", "value-label")
-			.attr("x", xBar + barWidth / 2)
-			.attr("y", y(clamped) - 8)
-			.attr("text-anchor", "middle")
-			.attr("fill", "#333")
-			.style("font-size", "12px")
-			.text(`${clamped} ${units}`);
+    // Single vertical bar representing current value
+    const barWidth = Math.min(120, innerWidth * 0.25);
+    const xBar = Math.max(10, (innerWidth - barWidth) / 2);
+    const clamped = Math.max(0, Math.min(currentValue ?? 0, yMax));
+    g
+      .append("rect")
+      .attr("class", "value-bar")
+      .attr("x", xBar)
+      .attr("y", y(clamped))
+      .attr("width", barWidth)
+      .attr("height", innerHeight - y(clamped))
+      .attr("fill", fillColor || "steelblue")
+      .attr("opacity", 0.9);
 
-		return () => svg.remove();
-	});
+    // Numeric label of current value
+    g
+      .append("text")
+      .attr("class", "value-label")
+      .attr("x", xBar + barWidth / 2)
+      .attr("y", y(clamped) - 8)
+      .attr("text-anchor", "middle")
+      .attr("fill", "#333")
+      .style("font-size", "12px")
+      .text(`${clamped} ${units}`);
+
+    return () => svg.remove();
+  });
 </script>
 
 <div class="graph-container">
-	<div bind:this={container} class="chart"></div>
+  <div bind:this={container} class="chart"></div>
+  
 </div>
 
 <style>
-	.graph-container {
-		/* match sidebar top padding for aligned tops */
-		padding: 16px 0 0 0;
-	}
+  .graph-container {
+    /* match sidebar top padding for aligned tops */
+    padding: 16px 0 0 0;
+  }
 
-	.chart {
-		display: inline-block;
-		margin: 0 0 20px 0;
-		max-width: 100%;
-	}
+  .chart {
+    display: block;
+    width: 100%;
+    margin: 0 0 20px 0;
+    max-width: 100%;
+  }
+
+  /* basic axis styling */
+  :global(.x-axis path),
+  :global(.y-axis path) {
+    stroke: #888;
+  }
+  :global(.x-axis line),
+  :global(.y-axis line) {
+    stroke: #ccc;
+  }
+  :global(.x-axis text),
+  :global(.y-axis text) {
+    fill: #444;
+    font-size: 11px;
+  }
+  :global(.y-title) { dominant-baseline: middle; }
 </style>

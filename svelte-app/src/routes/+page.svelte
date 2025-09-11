@@ -2,17 +2,12 @@
 	import Graph from "$lib/components/Graph.svelte";
 	import RangeWithAxis from "$lib/components/RangeWithAxis.svelte";
 
-  let latitude = $state(0);
-  let airTemperature = $state(20);
-  let windSpeed = $state(5);
-  let relativeHumidity = $state(50);
+	let latitude = $state(0);
+	let airTemperature = $state(20);
+	let windSpeed = $state(5);
+	let relativeHumidity = $state(50);
 
-  // Example: show Relative Humidity as the active metric for now
-  const title = $derived(() => "Relative Humidity");
-  const units = $derived(() => "%");
-  const yAxisMax = $derived(() => 100);
-  const fillColor = $derived(() => "#4682b4");
-  const currentValue = $derived(() => Math.max(0, Math.min(100, relativeHumidity)));
+	// Graphs will use placeholder data for now
 
 	const fmt = (n: number) => `${Math.round(n)}`;
 </script>
@@ -59,9 +54,15 @@
 			format={fmt}
 		/>
 	</div>
-  <div class="main">
-    <Graph {title} {units} {yAxisMax} {fillColor} {currentValue} />
-  </div>
+	<div class="main">
+		<div class="graphs-grid">
+			<Graph title="Relative Humidity" units="%" yAxisMax={100} fillColor="#4682b4" currentValue={65} />
+			<Graph title="Air Temperature" units="°C" yAxisMax={40} fillColor="#e67e22" currentValue={22} />
+			<div class="span-2">
+				<Graph title="Wind Speed" units="mph" yAxisMax={15} fillColor="#16a085" currentValue={8} />
+			</div>
+		</div>
+	</div>
 </section>
 
 <style>
@@ -95,6 +96,14 @@
 		min-width: 0; /* prevent grid overflow */
 	}
 
+	.graphs-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+		align-items: start;
+	}
+	.graphs-grid .span-2 { grid-column: 1 / -1; }
+
 	/* Remove space after the last slider */
 	:global(.sidebar > .control:last-child) {
 		margin-bottom: 0;
@@ -105,5 +114,7 @@
 			grid-template-columns: 1fr;
 			gap: 16px;
 		}
+
+		.graphs-grid { grid-template-columns: 1fr; }
 	}
 </style>
