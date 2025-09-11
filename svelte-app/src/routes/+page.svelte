@@ -217,7 +217,6 @@
 		flex: 1;
 		width: 100%;
 		box-sizing: border-box;
-		overflow: hidden; /* Critical: prevent SVG from exceeding container */
 	}
 
 	/* Remove space after the last slider */
