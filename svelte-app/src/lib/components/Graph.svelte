@@ -103,7 +103,7 @@
 			.attr("class", "y-title")
 			.attr(
 				"transform",
-				`translate(${-margin.left + 18}, ${innerHeight / 2}) rotate(-90)`,
+				`translate(${-margin.left + 8}, ${innerHeight / 2}) rotate(-90)`,
 			)
 			.attr("text-anchor", "middle")
 			.attr("fill", "#2c3e50")
