@@ -6,12 +6,14 @@
 		calculateEvaporationRate,
 		calculatePowerPerArea,
 		SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
+		type VaporPressureMethod,
 	} from "$lib/calculations.js";
 
 	let latitudeDeg = $state(0);
 	let airTemperatureDegC = $state(20);
 	let windSpeedMps = $state(4);
 	let relativeHumidityPct = $state(5);
+	let vaporPressureMethod = $state<VaporPressureMethod>("buck");
 
 	// Calculate derived values for the graphs
 	const airTemperatureK = $derived(airTemperatureDegC + 273.15);
@@ -19,15 +21,21 @@
 	const netRadiation = $derived(200); // Assumed constant for now (W/m²)
 
 	// Thermodynamic calculations
-	const delta = $derived(calculateDelta(airTemperatureK));
+	const delta = $derived(
+		calculateDelta({
+			T: airTemperatureK,
+			method: vaporPressureMethod,
+		}),
+	);
 	const evaporationRate = $derived(
-		calculateEvaporationRate(
-			netRadiation,
-			delta,
-			windSpeedMps,
-			airTemperatureK,
-			relativeHumidityFraction,
-		),
+		calculateEvaporationRate({
+			R_n: netRadiation,
+			delta: delta,
+			u_a: windSpeedMps,
+			T_mean: airTemperatureK,
+			relHum: relativeHumidityFraction,
+			method: vaporPressureMethod,
+		}),
 	);
 	// We have latent heat (L_v, J/g), evap. rate (Er, mm/day), density of water (1 g/cm^3). Want
 	// W/m^2. \
@@ -38,12 +46,12 @@
 			(24 * 3600),
 	);
 	const maxEnginePower = $derived(
-		calculatePowerPerArea(
-			evaporationRate,
-			airTemperatureK,
-			0.975,
-			relativeHumidityFraction,
-		),
+		calculatePowerPerArea({
+			evapRate: evaporationRate,
+			T_air: airTemperatureK,
+			relHumWet: 0.975,
+			relHumAir: relativeHumidityFraction,
+		}),
 	);
 
 	const fmt = (n: number) => `${Math.round(n)}`;

@@ -17,7 +17,21 @@ const WATER_VAPOR_GAS_CONSTANT = 461.5; // R_v (J kg^-1 K^-1)
  * @param T - temperature in Kelvin (K)
  * @returns Saturation vapor pressure (kPa)
  */
-export function calculateSaturationVaporPressure(T: number): number {
+// Vapor pressure calculation method type
+export type VaporPressureMethod =
+	| "buck"
+	| "magnus"
+	| "tetens"
+	| "antoine"
+	| "goff-gratch";
+
+/**
+ * Calculate saturation vapor pressure using the Buck equation.
+ *
+ * @param T - temperature in Kelvin (K)
+ * @returns Saturation vapor pressure (kPa)
+ */
+function calculateSaturationVaporPressure_Buck(T: number): number {
 	const T_celsius = T - 273.15;
 
 	// in hPa = kPa/10
@@ -30,6 +44,88 @@ export function calculateSaturationVaporPressure(T: number): number {
 }
 
 /**
+ * Calculate saturation vapor pressure using the Magnus formula.
+ *
+ * @param T - temperature in Kelvin (K)
+ * @returns Saturation vapor pressure (kPa)
+ */
+function calculateSaturationVaporPressure_Magnus(T: number): number {
+	const T_celsius = T - 273.15;
+	const e_s_hPa = 6.112 * Math.exp((17.67 * T_celsius) / (T_celsius + 243.5));
+	return e_s_hPa / 10; // Convert hPa to kPa
+}
+
+/**
+ * Calculate saturation vapor pressure using the Tetens equation.
+ *
+ * @param T - temperature in Kelvin (K)
+ * @returns Saturation vapor pressure (kPa)
+ */
+function calculateSaturationVaporPressure_Tetens(T: number): number {
+	const T_celsius = T - 273.15;
+	const e_s_hPa = 6.1078 * Math.exp((17.27 * T_celsius) / (T_celsius + 237.3));
+	return e_s_hPa / 10;
+}
+
+/**
+ * Calculate saturation vapor pressure using the Antoine equation.
+ *
+ * @param T - temperature in Kelvin (K)
+ * @returns Saturation vapor pressure (kPa)
+ */
+function calculateSaturationVaporPressure_Antoine(T: number): number {
+	// Antoine constants for water (temperature in K, pressure in mmHg)
+	const A = 8.07131;
+	const B = 1730.63;
+	const C = -39.724;
+
+	const log10_p_mmHg = A - B / (T + C);
+	const p_mmHg = Math.pow(10, log10_p_mmHg);
+	const p_kPa = p_mmHg * 0.133322; // Convert mmHg to kPa
+
+	return p_kPa;
+}
+
+/**
+ * Calculate saturation vapor pressure using the Goff-Gratch equation.
+ *
+ * @param T - temperature in Kelvin (K)
+ * @returns Saturation vapor pressure (kPa)
+ */
+function calculateSaturationVaporPressure_GoffGratch(T: number): number {
+	const T_steam = 373.16; // Steam point temperature (K)
+
+	const log10_e_s =
+		-7.90298 * (T_steam / T - 1) +
+		5.02808 * Math.log10(T_steam / T) -
+		1.3816e-7 * (Math.pow(10, 11.344 * (1 - T / T_steam)) - 1) +
+		8.1328e-3 * (Math.pow(10, -3.49149 * (T_steam / T - 1)) - 1) +
+		Math.log10(1013.246);
+
+	const e_s_hPa = Math.pow(10, log10_e_s);
+	return e_s_hPa / 10; // Convert to kPa
+}
+
+export function calculateSaturationVaporPressure(
+	T: number,
+	method: VaporPressureMethod = "buck",
+): number {
+	switch (method) {
+		case "magnus":
+			return calculateSaturationVaporPressure_Magnus(T);
+		case "tetens":
+			return calculateSaturationVaporPressure_Tetens(T);
+		case "antoine":
+			return calculateSaturationVaporPressure_Antoine(T);
+		case "goff-gratch":
+			return calculateSaturationVaporPressure_GoffGratch(T);
+		case "buck":
+		default:
+			return calculateSaturationVaporPressure_Buck(T);
+	}
+}
+
+/**
  * Calculate the slope of saturation vapor pressure curve (delta) using de_s/dT = L_v(T)*e_s / (R_v * T^2).
  *
  * @param T - temperature (K)
@@ -38,20 +134,26 @@ export function calculateSaturationVaporPressure(T: number): number {
  * @param R_v - gas constant of water vapor (J kg^-1 K^-1)
  * @returns Delta: slope of saturation vapor pressure curve (kPa K^-1)
  */
-export function calculateDelta(
-	T: number,
-	e_s?: number,
-	L_v: number = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
-	R_v: number = WATER_VAPOR_GAS_CONSTANT,
-): number {
+export function calculateDelta(params: {
+	T: number;
+	e_s?: number;
+	L_v?: number;
+	R_v?: number;
+	method?: VaporPressureMethod;
+}): number {
+	const {
+		T,
+		e_s,
+		L_v = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
+		R_v = WATER_VAPOR_GAS_CONSTANT,
+		method = "buck",
+	} = params;
+
 	// Convert L_v from MJ/Mg to J/kg
 	const L_v_j_kg = L_v * 1000;
 
-	if (e_s === undefined) {
-		e_s = calculateSaturationVaporPressure(T);
-	}
-
-	const Delta = (L_v_j_kg * e_s) / (R_v * T ** 2);
+	const e_s_calculated = e_s ?? calculateSaturationVaporPressure(T, method);
+	const Delta = (L_v_j_kg * e_s_calculated) / (R_v * T ** 2);
 
 	return Delta;
 }
@@ -70,18 +172,32 @@ export function calculateDelta(
  * @param gamma - psychrometric constant (0.067 kPa K^-1)
  * @returns E_pr: evaporation rate of water surface (mm day^-1)
  */
-export function calculateEvaporationRate(
-	R_n: number,
-	delta: number,
-	u_a: number,
-	T_mean: number,
-	relHum: number,
-	c_t: number = CONVERSION_CONSTANT,
-	L_v: number = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
-	rho_w: number = WATER_DENSITY,
-	gamma: number = PSYCHROMETRIC_CONSTANT,
-): number {
-	const e_star = calculateSaturationVaporPressure(T_mean);
+export function calculateEvaporationRate(params: {
+	R_n: number;
+	delta: number;
+	u_a: number;
+	T_mean: number;
+	relHum: number;
+	c_t?: number;
+	L_v?: number;
+	rho_w?: number;
+	gamma?: number;
+	method?: VaporPressureMethod;
+}): number {
+	const {
+		R_n,
+		delta,
+		u_a,
+		T_mean,
+		relHum,
+		c_t = CONVERSION_CONSTANT,
+		L_v = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
+		rho_w = WATER_DENSITY,
+		gamma = PSYCHROMETRIC_CONSTANT,
+		method = "buck",
+	} = params;
+
+	const e_star = calculateSaturationVaporPressure(T_mean, method);
 	const D_a = (1 - relHum) * e_star;
 
 	const numerator =
@@ -104,14 +220,23 @@ export function calculateEvaporationRate(
  * @param R - ideal gas constant (8.31 J mol^-1 K^-1)
  * @returns Power per area (W m^-2)
  */
-export function calculatePowerPerArea(
-	evapRate: number,
-	T_air: number,
-	relHumWet: number,
-	relHumAir: number,
-	c_t: number = EVAPORATION_CONVERSION_CONSTANT,
-	R: number = IDEAL_GAS_CONSTANT,
-): number {
+export function calculatePowerPerArea(params: {
+	evapRate: number;
+	T_air: number;
+	relHumWet: number;
+	relHumAir: number;
+	c_t?: number;
+	R?: number;
+}): number {
+	const {
+		evapRate,
+		T_air,
+		relHumWet,
+		relHumAir,
+		c_t = EVAPORATION_CONVERSION_CONSTANT,
+		R = IDEAL_GAS_CONSTANT,
+	} = params;
+
 	const powerPerArea =
 		c_t * evapRate * R * T_air * Math.log(relHumWet / relHumAir);
 
