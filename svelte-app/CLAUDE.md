@@ -82,3 +82,5 @@ The project uses Prettier with tabs and Svelte plugin. A git pre-commit hook at 
 - TypeScript is enabled project-wide
 - Static adapter requires all routes to be prerenderable
 - D3 manipulates DOM directly - ensure it runs after component mount
+- NEVER use `overflow:hidden` to fix scroll issues. ALWAYS be smart and just make
+  elements fit correctly.

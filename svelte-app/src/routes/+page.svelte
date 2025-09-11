@@ -18,50 +18,56 @@
 
 	function calculateGraphHeights() {
 		if (!graphsContainer) return;
-		
+
 		const viewportHeight = window.innerHeight;
 		const isWideScreen = window.innerWidth >= 800;
 		isDesktop = isWideScreen;
-		
+
 		if (!isWideScreen) {
 			// On mobile, use fixed height per graph
 			individualGraphHeight = 280;
 			return;
 		}
-		
+
 		// Calculate space taken by other elements
 		const containerTop = graphsContainer.getBoundingClientRect().top;
 		const bottomPadding = 40; // Extra buffer for any margins/padding
 		const gap = 12 * 2; // 12px gap between 3 graphs = 24px total
 		const firstGraphPadding = 16; // Only first graph has top padding
-		const availableHeight = Math.max(450, viewportHeight - containerTop - bottomPadding);
-		
-		// Divide available height by 3 graphs, accounting for gaps and first graph padding
-		individualGraphHeight = Math.floor((availableHeight - gap - firstGraphPadding) / 3);
+		const availableHeight = viewportHeight - containerTop - bottomPadding;
+
+		// Calculate ideal height per graph
+		const idealHeight = Math.floor(
+			(availableHeight - gap - firstGraphPadding) / 3,
+		);
+
+		// Set minimum height to prevent overlapping - prefer scrolling over overlap
+		const minGraphHeight = 180;
+		individualGraphHeight = Math.max(minGraphHeight, idealHeight);
 	}
 
 	$effect(() => {
 		if (!graphsContainer) return;
-		
+
 		const onResize = () => {
 			// Small delay to ensure DOM has updated
 			requestAnimationFrame(() => calculateGraphHeights());
 		};
-		
+
 		// Initial calculation
 		calculateGraphHeights();
-		
+
 		// Listen to window resize
-		window.addEventListener('resize', onResize);
-		
+		window.addEventListener("resize", onResize);
+
 		// Also use ResizeObserver for more reliable detection
 		const resizeObserver = new ResizeObserver(() => {
 			requestAnimationFrame(() => calculateGraphHeights());
 		});
 		resizeObserver.observe(graphsContainer);
-		
+
 		return () => {
-			window.removeEventListener('resize', onResize);
+			window.removeEventListener("resize", onResize);
 			resizeObserver.disconnect();
 		};
 	});
@@ -111,14 +117,35 @@
 	</div>
 	<div class="main">
 		<div class="graphs-stack" bind:this={graphsContainer}>
-			<div class="graph-item first-graph" style={`height: ${individualGraphHeight}px`}>
-				<Graph title="Relative Humidity" units="%" yAxisMax={100} fillColor="#4682b4" currentValue={relativeHumidity} />
+			<div
+				class="graph-item first-graph"
+				style={`height: ${individualGraphHeight}px`}
+			>
+				<Graph
+					title="Relative Humidity"
+					units="%"
+					yAxisMax={100}
+					fillColor="#4682b4"
+					currentValue={relativeHumidity}
+				/>
 			</div>
 			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
-				<Graph title="Air Temperature" units="°C" yAxisMax={40} fillColor="#e67e22" currentValue={airTemperature} />
+				<Graph
+					title="Air Temperature"
+					units="°C"
+					yAxisMax={40}
+					fillColor="#e67e22"
+					currentValue={airTemperature}
+				/>
 			</div>
 			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
-				<Graph title="Wind Speed" units="mph" yAxisMax={15} fillColor="#16a085" currentValue={windSpeed} />
+				<Graph
+					title="Wind Speed"
+					units="mph"
+					yAxisMax={15}
+					fillColor="#16a085"
+					currentValue={windSpeed}
+				/>
 			</div>
 		</div>
 	</div>
@@ -162,33 +189,35 @@
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
+		/* Remove any height constraints - let individual graphs determine total height */
 	}
-	
+
 	.graph-item {
 		display: flex;
 		flex-direction: column;
 		width: 100%;
 		box-sizing: border-box;
+		flex-shrink: 0; /* Prevent shrinking below set height - critical for preventing overlap */
 	}
-	
+
 	/* First graph gets top padding to align with sidebar */
 	.first-graph :global(.graph-container) {
 		padding-top: 16px;
 	}
-	
+
 	/* Ensure Graph component fills the available space */
 	.graph-item :global(.graph-container) {
 		height: 100%;
 		display: flex;
 		flex-direction: column;
-		width: 100%;
 		box-sizing: border-box;
 	}
-	
+
 	.graph-item :global(.chart) {
 		flex: 1;
 		width: 100%;
 		box-sizing: border-box;
+		overflow: hidden; /* Critical: prevent SVG from exceeding container */
 	}
 
 	/* Remove space after the last slider */

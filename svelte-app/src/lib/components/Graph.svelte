@@ -14,21 +14,17 @@
   };
   const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
 
-  // Simple one-time sizing when container is available
+  // Set SVG dimensions to exactly match container - no overflow allowed
   $effect(() => {
     if (!container) return;
     
-    // Get the container size once and use it
     const rect = container.getBoundingClientRect();
-    const containerWidth = rect.width || 800;
-    const containerHeight = rect.height || 300;
-    
-    width = Math.max(260, Math.floor(containerWidth));
-    height = Math.max(200, Math.floor(containerHeight));
+    width = Math.floor(rect.width || 800);
+    height = Math.floor(rect.height || 200);
   });
 
   $effect(() => {
-    const margin = { top: 16, right: 24, bottom: 40, left: 80 };
+    const margin = { top: 4, right: 12, bottom: 20, left: 50 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -132,8 +128,9 @@
   .chart {
     display: block;
     width: 100%;
-    flex: 1;
+    height: 100%;
     box-sizing: border-box;
+    overflow: hidden; /* Prevent any SVG overflow */
   }
 
   /* basic axis styling */
