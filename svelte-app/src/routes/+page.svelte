@@ -41,7 +41,7 @@
 		calculatePowerPerArea(
 			evaporationRate,
 			airTemperatureK,
-			0.99,
+			0.975,
 			relativeHumidityFraction,
 		),
 	);
