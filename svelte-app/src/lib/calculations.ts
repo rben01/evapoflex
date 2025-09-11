@@ -11,20 +11,6 @@ const EVAPORATION_CONVERSION_CONSTANT = 6.42465e-4; // c_t (mols day mm^-1 m^-2 
 const IDEAL_GAS_CONSTANT = 8.31446261815324; // R (J mol^-1 K^-1)
 const WATER_VAPOR_GAS_CONSTANT = 461.5; // R_v (J kg^-1 K^-1)
 
-// Type definitions
-export interface WeatherData {
-	"temperature_2m (K)": number;
-	Delta: number;
-	"relative_humidity_2m (frac)": number;
-	"wind_speed_10m (m/s)": number;
-	"terrestrial_radiation (W/m²)": number;
-}
-
-export interface PowerCalculationData extends WeatherData {
-	evap_rate: number;
-	rel_hum_wet?: number;
-}
-
 /**
  * Calculate saturation vapor pressure using the Buck equation.
  *
@@ -89,14 +75,14 @@ export function calculateEvaporationRate(
 	delta: number,
 	u_a: number,
 	T_mean: number,
-	rel_hum: number,
+	relHum: number,
 	c_t: number = CONVERSION_CONSTANT,
 	L_v: number = SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
 	rho_w: number = WATER_DENSITY,
 	gamma: number = PSYCHROMETRIC_CONSTANT,
 ): number {
 	const e_star = calculateSaturationVaporPressure(T_mean);
-	const D_a = (1 - rel_hum) * e_star;
+	const D_a = (1 - relHum) * e_star;
 
 	const numerator =
 		delta * R_n + 2.6 * c_t * L_v * rho_w * gamma * (1 + 0.54 * u_a) * D_a;
@@ -119,15 +105,15 @@ export function calculateEvaporationRate(
  * @returns Power per area (W m^-2)
  */
 export function calculatePowerPerArea(
-	evap_rate: number,
+	evapRate: number,
 	T_air: number,
-	rel_hum_wet: number,
-	rel_hum_air: number,
+	relHumWet: number,
+	relHumAir: number,
 	c_t: number = EVAPORATION_CONVERSION_CONSTANT,
 	R: number = IDEAL_GAS_CONSTANT,
 ): number {
-	const power_per_area =
-		c_t * evap_rate * R * T_air * Math.log(rel_hum_wet / rel_hum_air);
+	const powerPerArea =
+		c_t * evapRate * R * T_air * Math.log(relHumWet / relHumAir);
 
-	return power_per_area;
+	return powerPerArea;
 }
