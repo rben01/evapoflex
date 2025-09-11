@@ -2,20 +2,27 @@
 	import Graph from "$lib/components/Graph.svelte";
 	import RangeWithAxis from "$lib/components/RangeWithAxis.svelte";
 
-	let latitude = $state(0);
-	let airTemperature = $state(20);
-	let windSpeed = $state(5);
-	let relativeHumidity = $state(50);
+  let latitude = $state(0);
+  let airTemperature = $state(20);
+  let windSpeed = $state(5);
+  let relativeHumidity = $state(50);
+
+  // Example: show Relative Humidity as the active metric for now
+  const title = $derived(() => "Relative Humidity");
+  const units = $derived(() => "%");
+  const yAxisMax = $derived(() => 100);
+  const fillColor = $derived(() => "#4682b4");
+  const currentValue = $derived(() => Math.max(0, Math.min(100, relativeHumidity)));
 
 	const fmt = (n: number) => `${Math.round(n)}`;
 </script>
 
 <svelte:head>
-	<title>Svelte + D3 Dashboard</title>
+	<title>Evaporation-Powered Engine Power Analysis</title>
 	<meta name="description" content="A SvelteKit app with D3 visualization" />
 </svelte:head>
 
-<h1>Svelte + D3 Dashboard</h1>
+<h1>Evaporation-Powered Engine Power Analysis</h1>
 
 <section class="layout">
 	<div class="sidebar">
@@ -52,9 +59,9 @@
 			format={fmt}
 		/>
 	</div>
-	<div class="main">
-		<Graph {latitude} {airTemperature} {windSpeed} {relativeHumidity} />
-	</div>
+  <div class="main">
+    <Graph {title} {units} {yAxisMax} {fillColor} {currentValue} />
+  </div>
 </section>
 
 <style>

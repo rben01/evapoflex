@@ -24,7 +24,6 @@
 		margin: 0 auto;
 		padding: var(--horizontal-padding);
 		background-color: transparent; /* let body provide background */
-		min-height: 100vh;
 		box-shadow: none;
 	}
 </style>

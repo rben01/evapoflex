@@ -22,7 +22,7 @@
 	const tickCount = 6;
 	const ticks = $derived.by(() => {
 		const range = max - min;
-    const count = Math.max(2, tickCount);
+		const count = Math.max(2, tickCount);
 		const stepVal = range / (count - 1);
 		return Array.from({ length: count }, (_, i) => min + i * stepVal);
 	});
@@ -34,17 +34,19 @@
 	</label>
 	<input {id} type="range" {min} {max} {step} bind:value />
 	<div class="axis">
-		{#each ticks as t}
-			{#key t}
-				<div
-					class="tick"
-					style={`left: ${(100 * (t - min)) / (max - min)}%`}
-				>
-					<span class="tick-mark"></span>
-					<span class="tick-label">{format(t)}</span>
-				</div>
-			{/key}
-		{/each}
+		<div class="axis-inner">
+			{#each ticks as t}
+				{#key t}
+					<div
+						class="tick"
+						style={`left: ${(100 * (t - min)) / (max - min)}%`}
+					>
+						<span class="tick-mark"></span>
+						<span class="tick-label">{format(t)}</span>
+					</div>
+				{/key}
+			{/each}
+		</div>
 	</div>
 </div>
 
@@ -73,7 +75,16 @@
 		position: relative;
 		height: 28px;
 		margin-top: 6px;
-		overflow: hidden; /* prevent tick labels from causing horizontal scroll */
+	}
+
+	/* equal padding inside the axis so min/max are inset symmetrically */
+	.axis {
+		--axis-pad: 6px;
+	}
+	.axis-inner {
+		position: relative;
+		height: 100%;
+		margin: 0 var(--axis-pad);
 	}
 
 	.tick {
@@ -83,14 +94,6 @@
 		color: #333;
 		font-size: 0.85rem;
 		white-space: nowrap;
-	}
-
-	/* keep edge labels inside the container */
-	.tick:first-child {
-		transform: translateX(0%);
-	}
-	.tick:last-child {
-		transform: translateX(-100%);
 	}
 
 	.tick-mark {

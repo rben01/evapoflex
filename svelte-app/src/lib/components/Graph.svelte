@@ -3,72 +3,88 @@
 
 	let container: HTMLDivElement;
 	let width = 800;
-	let height = 600;
+	let height = 500;
 
 	type Props = {
-		latitude: number;
-		airTemperature: number;
-		windSpeed: number;
-		relativeHumidity: number;
+		title: string;
+		units: string;
+		yAxisMax: number;
+		fillColor: string;
+		currentValue: number;
 	};
-	const { latitude, airTemperature, windSpeed, relativeHumidity }: Props =
-		$props();
+	const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
 
-	// Svelte 5: use a rune-based effect instead of onMount
 	$effect(() => {
-		// Ensure a clean slate if HMR or re-runs occur
+		const margin = { top: 16, right: 24, bottom: 40, left: 56 };
+		const innerWidth = width - margin.left - margin.right;
+		const innerHeight = height - margin.top - margin.bottom;
+
 		d3.select(container).select("svg").remove();
 
-		// D3 setup - create SVG container
 		const svg = d3
 			.select(container)
 			.append("svg")
 			.attr("width", width)
 			.attr("height", height)
-			.style("border", "1px solid #ccc");
+			.style("border", "1px solid #eee");
 
-		// Placeholder content - simple circle to demonstrate D3 is working
-		svg.append("circle")
-			.attr("cx", width / 2)
-			.attr("cy", height / 2)
-			.attr("r", 50)
-			.attr("fill", "steelblue")
-			.attr("opacity", 0.7);
+		const g = svg
+			.append("g")
+			.attr("transform", `translate(${margin.left},${margin.top})`);
 
-		// Placeholder text
-		svg.append("text")
-			.attr("x", width / 2)
-			.attr("y", height / 2 + 80)
-			.attr("text-anchor", "middle")
-			.attr("font-family", "Arial, sans-serif")
-			.attr("font-size", "18px")
+		const yMax = Math.max(0, yAxisMax || 1);
+		const y = d3
+			.scaleLinear()
+			.domain([0, yMax])
+			.nice()
+			.range([innerHeight, 0]);
+		const yAxis = d3.axisLeft(y).ticks(6).tickSizeOuter(0);
+
+		g.append("g").attr("class", "y-axis").call(yAxis);
+
+		// Axis label (units)
+		g.append("text")
+			.attr("class", "y-label")
+			.attr("x", 0)
+			.attr("y", -8)
 			.attr("fill", "#333")
-			.text("D3 Graph Placeholder");
+			.attr("text-anchor", "start")
+			.style("font-size", "12px")
+			.text(units);
 
-		// Add axes placeholders
-		const xScale = d3
-			.scaleLinear()
-			.domain([0, 100])
-			.range([50, width - 50]);
+		// Title inside svg
+		svg.append("text")
+			.attr("x", margin.left)
+			.attr("y", 12)
+			.attr("fill", "#2c3e50")
+			.style("font-size", "14px")
+			.style("font-weight", 600)
+			.text(title);
 
-		const yScale = d3
-			.scaleLinear()
-			.domain([0, 100])
-			.range([height - 50, 50]);
+		// Single vertical bar representing current value
+		const barWidth = Math.min(120, innerWidth * 0.25);
+		const xBar = Math.max(10, (innerWidth - barWidth) / 2);
+		const clamped = Math.max(0, Math.min(currentValue ?? 0, yMax));
+		g.append("rect")
+			.attr("class", "value-bar")
+			.attr("x", xBar)
+			.attr("y", y(clamped))
+			.attr("width", barWidth)
+			.attr("height", innerHeight - y(clamped))
+			.attr("fill", fillColor || "steelblue")
+			.attr("opacity", 0.9);
 
-		const xAxis = d3.axisBottom(xScale);
-		const yAxis = d3.axisLeft(yScale);
+		// Numeric label of current value
+		g.append("text")
+			.attr("class", "value-label")
+			.attr("x", xBar + barWidth / 2)
+			.attr("y", y(clamped) - 8)
+			.attr("text-anchor", "middle")
+			.attr("fill", "#333")
+			.style("font-size", "12px")
+			.text(`${clamped} ${units}`);
 
-		svg.append("g")
-			.attr("transform", `translate(0, ${height - 50})`)
-			.call(xAxis);
-
-		svg.append("g").attr("transform", "translate(50, 0)").call(yAxis);
-
-		// Cleanup when the component unmounts
-		return () => {
-			svg.remove();
-		};
+		return () => svg.remove();
 	});
 </script>
 
@@ -80,11 +96,11 @@
 	.graph-container {
 		/* match sidebar top padding for aligned tops */
 		padding: 16px 0 0 0;
-		text-align: center;
 	}
 
 	.chart {
 		display: inline-block;
 		margin: 0 0 20px 0;
+		max-width: 100%;
 	}
 </style>
