@@ -14,16 +14,17 @@
   };
   const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
 
-  // Resize observer to make the chart responsive to its container
+  // Simple one-time sizing when container is available
   $effect(() => {
     if (!container) return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect?.width ?? width;
-      width = Math.max(260, Math.round(w));
-      height = Math.max(200, Math.round(width * 0.6));
-    });
-    ro.observe(container);
-    return () => ro.disconnect();
+    
+    // Get the container size once and use it
+    const rect = container.getBoundingClientRect();
+    const containerWidth = rect.width || 800;
+    const containerHeight = rect.height || 300;
+    
+    width = Math.max(260, Math.floor(containerWidth));
+    height = Math.max(200, Math.floor(containerHeight));
   });
 
   $effect(() => {
@@ -36,9 +37,11 @@
     const svg = d3
       .select(container)
       .append("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .style("border", "1px solid #eee");
+      .attr("width", "100%")
+      .attr("height", "100%")
+      .attr("viewBox", `0 0 ${width} ${height}`)
+      .style("border", "1px solid #eee")
+      .style("display", "block");
 
     const g = svg
       .append("g")
@@ -115,15 +118,18 @@
 
 <style>
   .graph-container {
-    /* match sidebar top padding for aligned tops */
-    padding: 16px 0 0 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
   }
 
   .chart {
     display: block;
     width: 100%;
-    margin: 0 0 20px 0;
-    max-width: 100%;
+    flex: 1;
+    box-sizing: border-box;
   }
 
   /* basic axis styling */

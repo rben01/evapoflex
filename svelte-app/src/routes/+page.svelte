@@ -10,6 +10,42 @@
 	// Graphs will use placeholder data for now
 
 	const fmt = (n: number) => `${Math.round(n)}`;
+
+	// Calculate height for each individual graph to prevent scrolling
+	let graphsContainer: HTMLDivElement;
+	let individualGraphHeight = $state(200);
+	let isDesktop = $state(true);
+
+	function calculateGraphHeights() {
+		if (!graphsContainer) return;
+		
+		const viewportHeight = window.innerHeight;
+		const isWideScreen = window.innerWidth >= 800;
+		isDesktop = isWideScreen;
+		
+		if (!isWideScreen) {
+			// On mobile, use fixed height per graph
+			individualGraphHeight = 280;
+			return;
+		}
+		
+		// Calculate space taken by other elements
+		const containerTop = graphsContainer.getBoundingClientRect().top;
+		const bottomPadding = 40; // Extra buffer for any margins/padding
+		const gap = 12 * 2; // 12px gap between 3 graphs = 24px total
+		const firstGraphPadding = 16; // Only first graph has top padding
+		const availableHeight = Math.max(450, viewportHeight - containerTop - bottomPadding);
+		
+		// Divide available height by 3 graphs, accounting for gaps and first graph padding
+		individualGraphHeight = Math.floor((availableHeight - gap - firstGraphPadding) / 3);
+	}
+
+	$effect(() => {
+		const onResize = () => calculateGraphHeights();
+		calculateGraphHeights();
+		window.addEventListener('resize', onResize);
+		return () => window.removeEventListener('resize', onResize);
+	});
 </script>
 
 <svelte:head>
@@ -55,11 +91,15 @@
 		/>
 	</div>
 	<div class="main">
-		<div class="graphs-grid">
-			<Graph title="Relative Humidity" units="%" yAxisMax={100} fillColor="#4682b4" currentValue={65} />
-			<Graph title="Air Temperature" units="°C" yAxisMax={40} fillColor="#e67e22" currentValue={22} />
-			<div class="span-2">
-				<Graph title="Wind Speed" units="mph" yAxisMax={15} fillColor="#16a085" currentValue={8} />
+		<div class="graphs-stack" bind:this={graphsContainer}>
+			<div class="graph-item first-graph" style={`height: ${individualGraphHeight}px`}>
+				<Graph title="Relative Humidity" units="%" yAxisMax={100} fillColor="#4682b4" currentValue={relativeHumidity} />
+			</div>
+			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
+				<Graph title="Air Temperature" units="°C" yAxisMax={40} fillColor="#e67e22" currentValue={airTemperature} />
+			</div>
+			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
+				<Graph title="Wind Speed" units="mph" yAxisMax={15} fillColor="#16a085" currentValue={windSpeed} />
 			</div>
 		</div>
 	</div>
@@ -76,9 +116,11 @@
 
 	.layout {
 		display: grid;
-		grid-template-columns: 280px 1fr;
-		gap: 12px; /* narrower gap between sidebar and graph */
+		grid-template-columns: 280px minmax(0, 1fr);
+		gap: 12px;
 		align-items: start;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.sidebar {
@@ -92,17 +134,43 @@
 	}
 
 	.main {
-		overflow: auto;
-		min-width: 0; /* prevent grid overflow */
+		min-width: 0;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
-	.graphs-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+	.graphs-stack {
+		display: flex;
+		flex-direction: column;
 		gap: 12px;
-		align-items: start;
 	}
-	.graphs-grid .span-2 { grid-column: 1 / -1; }
+	
+	.graph-item {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	
+	/* First graph gets top padding to align with sidebar */
+	.first-graph :global(.graph-container) {
+		padding-top: 16px;
+	}
+	
+	/* Ensure Graph component fills the available space */
+	.graph-item :global(.graph-container) {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		box-sizing: border-box;
+	}
+	
+	.graph-item :global(.chart) {
+		flex: 1;
+		width: 100%;
+		box-sizing: border-box;
+	}
 
 	/* Remove space after the last slider */
 	:global(.sidebar > .control:last-child) {
@@ -114,7 +182,5 @@
 			grid-template-columns: 1fr;
 			gap: 16px;
 		}
-
-		.graphs-grid { grid-template-columns: 1fr; }
 	}
 </style>
