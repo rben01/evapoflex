@@ -1,5 +1,13 @@
 <script lang="ts">
 	import * as d3 from "d3";
+	import { onMount } from "svelte";
+
+	type D3Selection<Elem extends d3.BaseType> = d3.Selection<
+		Elem,
+		unknown,
+		null,
+		undefined
+	>;
 
 	let container: HTMLDivElement;
 	let width = $state(800);
@@ -13,6 +21,33 @@
 		currentValue: number;
 	};
 	const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
+
+	// Cache D3 selections for efficient updates
+	let svg: D3Selection<SVGSVGElement>;
+	let g: D3Selection<SVGGElement>;
+	let valueBar: D3Selection<SVGRectElement>;
+	let valueLabel: D3Selection<SVGTextElement>;
+	let yAxis: D3Selection<SVGGElement>;
+	let yTitle: D3Selection<SVGTextElement>;
+
+	// Derived layout values
+	const margin = { top: 4, right: 12, bottom: 20, left: 50 };
+	const innerWidth = $derived(width - margin.left - margin.right);
+	const innerHeight = $derived(height - margin.top - margin.bottom);
+	const x = $derived(d3.scaleLinear().domain([0, 1]).range([0, innerWidth]));
+	const xAxis = $derived(
+		d3
+			.axisBottom(x)
+			.ticks(5)
+			.tickFormat(() => ""),
+	);
+	const barWidth = $derived(Math.min(120, innerWidth * 0.25));
+	const xBar = $derived(Math.max(10, (innerWidth - barWidth) / 2));
+	const yMax = $derived(Math.max(0, yAxisMax || 1));
+	const y = $derived(
+		d3.scaleLinear().domain([0, yMax]).range([innerHeight, 0]),
+	);
+	const clamped = $derived(Math.max(0, Math.min(currentValue ?? 0, yMax)));
 
 	// ResizeObserver to keep SVG sized to its container at all times
 	$effect(() => {
@@ -52,89 +87,112 @@
 		};
 	});
 
-	$effect(() => {
-		const margin = { top: 4, right: 12, bottom: 20, left: 50 };
-		const innerWidth = width - margin.left - margin.right;
-		const innerHeight = height - margin.top - margin.bottom;
+	// One-time SVG setup
+	onMount(() => {
+		if (!container) return;
 
+		// Remove any existing SVG
 		d3.select(container).select("svg").remove();
 
-		const svg = d3
+		// Create SVG structure
+		svg = d3
 			.select(container)
 			.append("svg")
 			.attr("width", "100%")
 			.attr("height", "100%")
-			.attr("viewBox", `0 0 ${width} ${height}`)
 			.style("display", "block");
 
-		const g = svg
+		g = svg
 			.append("g")
 			.attr("transform", `translate(${margin.left},${margin.top})`);
 
-		const yMax = Math.max(0, yAxisMax || 1);
-		const y = d3.scaleLinear().domain([0, yMax]).range([innerHeight, 0]);
+		// Create static axes containers
 
-		// Simple, clean tick generation
-		const tickCount = 5;
-		const step = yMax / tickCount;
-		const yTicks = [];
-		for (let i = 0; i <= tickCount; i++) {
-			yTicks.push(Math.round(i * step * 10) / 10); // Round to 1 decimal
-		}
-
-		const yAxis = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
-
-		// Bottom X axis as a baseline for reference
-		const x = d3.scaleLinear().domain([0, 1]).range([0, innerWidth]);
-		const xAxis = d3
-			.axisBottom(x)
-			.ticks(5)
-			.tickFormat(() => "");
 		g.append("g")
 			.attr("class", "x-axis")
 			.attr("transform", `translate(0,${innerHeight})`)
 			.call(xAxis);
 
-		// Left Y axis with ticks from 0..yAxisMax
-		g.append("g").attr("class", "y-axis").call(yAxis);
+		yAxis = g.append("g").attr("class", "y-axis");
 
-		// Y-axis title, centered and rotated 90 degrees
-		g.append("text")
+		// Y-axis title
+		yTitle = g
+			.append("text")
 			.attr("class", "y-title")
+			.attr("text-anchor", "middle")
+			.attr("fill", "#2c3e50")
+			.style("font-size", "13px")
+			.style("font-weight", 600);
+
+		// Create dynamic elements
+		valueBar = g
+			.append("rect")
+			.attr("class", "value-bar")
+			.attr("opacity", 0.9);
+
+		valueLabel = g
+			.append("text")
+			.attr("class", "value-label")
+			.attr("text-anchor", "middle")
+			.attr("fill", "#333")
+			.style("font-size", "12px");
+
+		return () => {
+			if (svg) svg.remove();
+		};
+	});
+
+	// Layout updates (when size or scale changes)
+	$effect(() => {
+		if (!svg || !g) return;
+
+		// Update SVG viewBox
+		svg.attr("viewBox", `0 0 ${width} ${height}`);
+
+		// Update group transform
+		g.attr("transform", `translate(${margin.left},${margin.top})`);
+
+		// Update x-axis
+		(g.select(".x-axis") as D3Selection<SVGGElement>)
+			.attr("transform", `translate(0,${innerHeight})`)
+			.call(xAxis);
+
+		// Update y-axis
+		const tickCount = 5;
+		const step = yMax / tickCount;
+		const yTicks = [];
+		for (let i = 0; i <= tickCount; i++) {
+			yTicks.push(Math.round(i * step * 10) / 10);
+		}
+		const yAxisGenerator = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
+		yAxis.call(yAxisGenerator);
+
+		// Update y-axis title position
+		yTitle
 			.attr(
 				"transform",
 				`translate(${-margin.left + 8}, ${innerHeight / 2}) rotate(-90)`,
 			)
-			.attr("text-anchor", "middle")
-			.attr("fill", "#2c3e50")
-			.style("font-size", "13px")
-			.style("font-weight", 600)
 			.text(`${title} (${units})`);
+	});
 
-		// Single vertical bar representing current value
-		const barWidth = Math.min(120, innerWidth * 0.25);
-		const xBar = Math.max(10, (innerWidth - barWidth) / 2);
-		const clamped = Math.max(0, Math.min(currentValue ?? 0, yMax));
-		g.append("rect")
-			.attr("class", "value-bar")
+	// Data updates (when value or color changes)
+	$effect(() => {
+		if (!valueBar || !valueLabel) return;
+
+		// Update bar
+		valueBar
 			.attr("x", xBar)
 			.attr("y", y(clamped))
 			.attr("width", barWidth)
 			.attr("height", innerHeight - y(clamped))
-			.attr("fill", fillColor || "steelblue")
-			.attr("opacity", 0.9);
+			.attr("fill", fillColor || "steelblue");
 
-		// Numeric label of current value
-		g.append("text")
-			.attr("class", "value-label")
+		// Update label
+		valueLabel
 			.attr("x", xBar + barWidth / 2)
 			.attr("y", y(clamped) - 8)
-			.attr("text-anchor", "middle")
-			.attr("fill", "#333")
-			.style("font-size", "12px")
 			.text(`${clamped.toFixed(2)} ${units}`);
-
-		return () => svg.remove();
 	});
 </script>
 
