@@ -10,8 +10,8 @@
 
 	let latitudeDeg = $state(0);
 	let airTemperatureDegC = $state(20);
-	let windSpeedMps = $state(5);
-	let relativeHumidityPct = $state(50);
+	let windSpeedMps = $state(4);
+	let relativeHumidityPct = $state(5);
 
 	// Calculate derived values for the graphs
 	const airTemperatureK = $derived(airTemperatureDegC + 273.15);
