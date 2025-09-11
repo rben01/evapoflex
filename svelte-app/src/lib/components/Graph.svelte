@@ -132,7 +132,7 @@
 			.attr("text-anchor", "middle")
 			.attr("fill", "#333")
 			.style("font-size", "12px")
-			.text(`${clamped} ${units}`);
+			.text(`${clamped.toFixed(2)} ${units}`);
 
 		return () => svg.remove();
 	});
