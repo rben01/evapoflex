@@ -31,7 +31,7 @@
 	let yTitle: D3Selection<SVGTextElement>;
 
 	// Derived layout values
-	const margin = { top: 4, right: 12, bottom: 20, left: 50 };
+	const margin = { top: 4, right: 12, bottom: 20, left: 55 };
 	const innerWidth = $derived(width - margin.left - margin.right);
 	const innerHeight = $derived(height - margin.top - margin.bottom);
 	const x = $derived(d3.scaleLinear().domain([0, 1]).range([0, innerWidth]));
@@ -39,6 +39,7 @@
 		d3
 			.axisBottom(x)
 			.ticks(0)
+			.tickSizeOuter(0)
 			.tickFormat(() => ""),
 	);
 	const barWidth = $derived(Math.min(120, innerWidth * 0.25));

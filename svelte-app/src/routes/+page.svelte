@@ -18,7 +18,11 @@
 	// Calculate derived values for the graphs
 	const airTemperatureK = $derived(airTemperatureDegC + 273.15);
 	const relativeHumidityFraction = $derived(relativeHumidityPct / 100);
-	const netRadiation = $derived(200); // Assumed constant for now (W/m²)
+	const netRadiation = $derived.by(() => {
+		const Q0 = 1361; //W/m^2
+		const phi = (latitudeDeg * Math.PI) / 180;
+		return (Q0 / 4) * (1.2385 - 0.7155 * Math.sin(phi) ** 2);
+	});
 
 	// Thermodynamic calculations
 	const delta = $derived(
@@ -173,7 +177,7 @@
 				<Graph
 					title="Total Latent Energy"
 					units="W/m²"
-					yAxisMax={1000}
+					yAxisMax={1250}
 					fillColor="#e74c3c"
 					currentValue={totalLatentEnergy}
 				/>
