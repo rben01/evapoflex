@@ -1,6 +1,7 @@
 <script lang="ts">
 	interface Props {
 		label: string;
+		units: string;
 		min: number;
 		max: number;
 		step?: number;
@@ -10,6 +11,7 @@
 
 	let {
 		label,
+		units,
 		min,
 		max,
 		step = 1,
@@ -30,7 +32,7 @@
 
 <div class="control">
 	<label class="label" for={id}>
-		{label}: <span class="value">{format(value)}</span>
+		{label}: <span class="value">{format(value)}{units}</span>
 	</label>
 	<input {id} type="range" {min} {max} {step} bind:value />
 	<div class="axis">

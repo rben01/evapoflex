@@ -128,7 +128,8 @@
 <section class="layout">
 	<div class="sidebar">
 		<RangeWithAxis
-			label="Latitude (°)"
+			label="Latitude"
+			units="°"
 			min={-90}
 			max={90}
 			step={1}
@@ -136,7 +137,8 @@
 			format={fmt}
 		/>
 		<RangeWithAxis
-			label="Air Temperature (°C)"
+			label="Air Temperature"
+			units="&VeryThinSpace;°C"
 			min={-20}
 			max={40}
 			step={1}
@@ -144,7 +146,8 @@
 			format={fmt}
 		/>
 		<RangeWithAxis
-			label="Wind Speed (m/s)"
+			label="Wind Speed"
+			units="&VeryThinSpace;m/s"
 			min={0}
 			max={15}
 			step={1}
@@ -152,7 +155,8 @@
 			format={fmt}
 		/>
 		<RangeWithAxis
-			label="Relative Humidity (%)"
+			label="Relative Humidity"
+			units="&VeryThinSpace;%"
 			min={5}
 			max={95}
 			step={1}
