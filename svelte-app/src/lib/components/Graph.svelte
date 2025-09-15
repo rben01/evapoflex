@@ -38,7 +38,7 @@
 	const xAxis = $derived(
 		d3
 			.axisBottom(x)
-			.ticks(5)
+			.ticks(0)
 			.tickFormat(() => ""),
 	);
 	const barWidth = $derived(Math.min(120, innerWidth * 0.25));
