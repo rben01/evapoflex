@@ -55,21 +55,15 @@
 
 		const updateSVGSize = () => {
 			const rect = container.getBoundingClientRect();
-			const containerWidth = Math.floor(rect.width || 800);
-			const containerHeight = Math.floor(rect.height || 200);
 
 			// Container size is what we use - padding and border handled by CSS
-			const newWidth = containerWidth;
-			const newHeight = containerHeight;
+			const newWidth = rect.width;
+			const newHeight = rect.height;
 
 			// Only update if there's a meaningful change
-			if (
-				Math.abs(width - newWidth) > 1 ||
-				Math.abs(height - newHeight) > 1
-			) {
-				width = newWidth;
-				height = newHeight;
-			}
+
+			width = newWidth;
+			height = newHeight;
 		};
 
 		// Initial sizing

@@ -257,6 +257,7 @@
 	.graph-item {
 		aspect-ratio: 3 / 5;
 		min-width: 0;
+		height: 100%;
 	}
 
 	/* Remove space after the last slider */
