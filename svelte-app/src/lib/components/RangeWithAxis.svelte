@@ -93,7 +93,7 @@
 		position: absolute;
 		transform: translateX(-50%);
 		text-align: center;
-		color: #333;
+		color: var(--text-secondary);
 		font-size: 0.85rem;
 		white-space: nowrap;
 	}
@@ -102,7 +102,7 @@
 		display: block;
 		width: 1px;
 		height: 6px;
-		background: #666;
+		background: var(--text-secondary);
 		margin: 0 auto 4px auto;
 	}
 

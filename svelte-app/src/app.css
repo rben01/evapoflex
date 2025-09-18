@@ -1,8 +1,22 @@
+/* Dark theme CSS variables */
+:root {
+	--bg-primary: #121220;
+	--bg-secondary: #191c3d;
+	--bg-accent: #0f1419;
+	--text-primary: #e8e9ed;
+	--text-secondary: #b8b9be;
+	--text-muted: #a5a6ab;
+	--border-primary: #3d4250;
+	--border-secondary: #4a4e5d;
+}
+
 html,
 body {
 	margin: 0;
 	padding: 0;
 	height: 100%;
+	background-color: var(--bg-primary);
+	color: var(--text-primary);
 }
 
 #app {

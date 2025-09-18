@@ -202,7 +202,7 @@
 <style>
 	h1 {
 		text-align: center;
-		color: #2c3e50;
+		color: var(--text-primary);
 		margin-bottom: 16px;
 		font-size: 2rem;
 		font-weight: 400;
@@ -218,8 +218,8 @@
 	}
 
 	.sidebar {
-		background: #fafafa;
-		border: 1px solid #e5e5e5;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border-primary);
 		border-radius: 8px;
 		padding: 16px 30px 16px 30px;
 		margin-top: 16px;

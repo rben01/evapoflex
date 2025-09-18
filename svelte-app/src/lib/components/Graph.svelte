@@ -121,7 +121,7 @@
 			.append("text")
 			.attr("class", "y-title")
 			.attr("text-anchor", "middle")
-			.attr("fill", "#2c3e50")
+			.attr("fill", "var(--text-primary)")
 			.style("font-size", "13px")
 			.style("font-weight", 600);
 
@@ -135,7 +135,7 @@
 			.append("text")
 			.attr("class", "value-label")
 			.attr("text-anchor", "middle")
-			.attr("fill", "#333")
+			.attr("fill", "var(--text-primary)")
 			.style("font-size", "12px");
 
 		return () => {
@@ -215,22 +215,22 @@
 		width: 100%;
 		height: 100%;
 		box-sizing: border-box;
-		border: 1px solid #eee;
+		border: 1px solid var(--border-primary);
 		padding: 8px 0 0 0;
 	}
 
 	/* basic axis styling */
 	:global(.x-axis path),
 	:global(.y-axis path) {
-		stroke: #888;
+		stroke: var(--text-secondary);
 	}
 	:global(.x-axis line),
 	:global(.y-axis line) {
-		stroke: #ccc;
+		stroke: var(--text-secondary);
 	}
 	:global(.x-axis text),
 	:global(.y-axis text) {
-		fill: #444;
+		fill: var(--text-secondary);
 		font-size: 11px;
 	}
 	:global(.y-title) {

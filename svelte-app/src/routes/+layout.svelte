@@ -14,7 +14,8 @@
 		margin: 0;
 		padding: 0;
 		font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-		background-color: white; /* full-bleed page background */
+		background-color: var(--bg-primary); /* dark theme background */
+		color: var(--text-primary);
 	}
 
 	main {
