@@ -63,15 +63,6 @@
 	function calculatePageScale() {
 		if (!mainContainer) return;
 
-		const isNarrowScreen = window.innerWidth <= 800;
-
-		if (isNarrowScreen) {
-			// Remove any scaling, let CSS media queries handle mobile layout
-			mainContainer.style.transform = "none";
-			mainContainer.style.transformOrigin = "unset";
-			return;
-		}
-
 		// Apply scaling for desktop (>800px)
 		const baseWidth = 1400;
 		const baseHeight = 900;
@@ -271,36 +262,5 @@
 	/* Remove space after the last slider */
 	:global(.sidebar > .control:last-child) {
 		margin-bottom: 0;
-	}
-
-	@media (max-width: 800px) {
-		.layout {
-			grid-template-columns: 1fr; /* Flexible for mobile */
-			gap: 16px;
-			width: 100%; /* Flexible width for mobile */
-			height: auto; /* Flexible height for mobile */
-		}
-
-		.content-rows {
-			height: auto; /* Flexible height for mobile */
-		}
-
-		.row {
-			flex-direction: column;
-			height: auto; /* Flexible height for mobile */
-			min-height: 200px;
-			gap: 16px;
-			padding: 16px;
-		}
-
-		.row-image {
-			height: 150px;
-			max-height: 150px;
-		}
-
-		.graph-item {
-			width: 100%;
-			max-width: none;
-		}
 	}
 </style>
