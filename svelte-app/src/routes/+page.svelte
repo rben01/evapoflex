@@ -9,7 +9,7 @@
 		type VaporPressureMethod,
 	} from "$lib/calculations.js";
 
-	let latitudeDeg = $state(0);
+	let irradiance = $state(500);
 	let airTemperatureDegC = $state(20);
 	let windSpeedMps = $state(4);
 	let relativeHumidityPct = $state(5);
@@ -18,11 +18,6 @@
 	// Calculate derived values for the graphs
 	const airTemperatureK = $derived(airTemperatureDegC + 273.15);
 	const relativeHumidityFraction = $derived(relativeHumidityPct / 100);
-	const netRadiation = $derived.by(() => {
-		const Q0 = 1361; //W/m^2
-		const phi = (latitudeDeg * Math.PI) / 180;
-		return (Q0 / 4) * (1.2385 - 0.7155 * Math.sin(phi) ** 2);
-	});
 
 	// Thermodynamic calculations
 	const delta = $derived(
@@ -33,7 +28,7 @@
 	);
 	const evaporationRate = $derived(
 		calculateEvaporationRate({
-			R_n: netRadiation,
+			R_n: irradiance,
 			delta: delta,
 			u_a: windSpeedMps,
 			T_mean: airTemperatureK,
@@ -132,12 +127,12 @@
 <section class="layout">
 	<div class="sidebar">
 		<RangeWithAxis
-			label="Latitude"
-			units="°"
-			min={-90}
-			max={90}
-			step={1}
-			bind:value={latitudeDeg}
+			label="Radiation"
+			units="W/m²"
+			min={0}
+			max={1000}
+			step={25}
+			bind:value={irradiance}
 			format={fmt}
 		/>
 		<RangeWithAxis
@@ -177,7 +172,7 @@
 				<Graph
 					title="Total Latent Energy"
 					units="W/m²"
-					yAxisMax={1250}
+					yAxisMax={1750}
 					fillColor="#e74c3c"
 					currentValue={totalLatentEnergy}
 				/>
@@ -186,7 +181,7 @@
 				<Graph
 					title="Daily Evaporation"
 					units="mm/day"
-					yAxisMax={40}
+					yAxisMax={60}
 					fillColor="#3498db"
 					currentValue={evaporationRate}
 				/>
@@ -195,7 +190,7 @@
 				<Graph
 					title="Maximum Engine Power"
 					units="W/m²"
-					yAxisMax={200}
+					yAxisMax={300}
 					fillColor="#2ecc71"
 					currentValue={maxEnginePower}
 				/>
