@@ -19,9 +19,9 @@
 	}
 
 	main {
-		--horizontal-padding: 20px;
+		--horizontal-padding: 8px;
 		width: calc(100% - 2 * var(--horizontal-padding));
-		max-width: 1200px;
+		max-width: 1400px;
 		margin: 0 auto;
 		padding: var(--horizontal-padding);
 		background-color: transparent; /* let body provide background */

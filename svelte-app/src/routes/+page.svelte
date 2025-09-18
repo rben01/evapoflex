@@ -8,6 +8,8 @@
 		SPECIFIC_LATENT_HEAT_OF_VAPORIZATION_WATER,
 		type VaporPressureMethod,
 	} from "$lib/calculations.js";
+	import evapotranspirationImage from "$lib/assets/evapotranspiration.jpg";
+	import engineImage from "$lib/assets/engine.jpg";
 
 	let irradiance = $state(500);
 	let airTemperatureDegC = $state(20);
@@ -55,64 +57,51 @@
 
 	const fmt = (n: number) => `${Math.round(n)}`;
 
-	// Calculate height for each individual graph to prevent scrolling
-	let graphsContainer: HTMLDivElement;
-	let individualGraphHeight = $state(200);
-	let isDesktop = $state(true);
+	// Page scaling for desktop, flexible layout for mobile
+	let mainContainer: HTMLElement;
+	let individualGraphHeight = $state(250); // Fixed height for desktop
 
-	function calculateGraphHeights() {
-		if (!graphsContainer) return;
+	function calculatePageScale() {
+		if (!mainContainer) return;
 
-		const viewportHeight = window.innerHeight;
-		const isWideScreen = window.innerWidth >= 800;
-		isDesktop = isWideScreen;
+		const isNarrowScreen = window.innerWidth <= 800;
 
-		if (!isWideScreen) {
-			// On mobile, use fixed height per graph
-			individualGraphHeight = 280;
+		if (isNarrowScreen) {
+			// Remove any scaling, let CSS media queries handle mobile layout
+			mainContainer.style.transform = "none";
+			mainContainer.style.transformOrigin = "unset";
+			individualGraphHeight = 200; // Smaller graphs for mobile
 			return;
 		}
 
-		// Calculate space taken by other elements
-		const containerTop = graphsContainer.getBoundingClientRect().top;
-		const bottomPadding = 40; // Extra buffer for any margins/padding
-		const gap = 12 * 2; // 12px gap between 3 graphs = 24px total
-		const firstGraphPadding = 16; // Only first graph has top padding
-		const availableHeight = viewportHeight - containerTop - bottomPadding;
+		// Apply scaling for desktop (>800px)
+		const baseWidth = 1400;
+		const baseHeight = 900;
+		const scaleX = window.innerWidth / baseWidth;
+		const scaleY = window.innerHeight / baseHeight;
+		const scale = Math.min(scaleX, scaleY, 1); // Never scale up beyond 100%
 
-		// Calculate ideal height per graph
-		const idealHeight = Math.floor(
-			(availableHeight - gap - firstGraphPadding) / 3,
-		);
-
-		// Set minimum height to prevent overlapping - prefer scrolling over overlap
-		const minGraphHeight = 180;
-		individualGraphHeight = Math.max(minGraphHeight, idealHeight);
+		mainContainer.style.transform = `scale(${scale})`;
+		mainContainer.style.transformOrigin = "top left";
+		individualGraphHeight = 250; // Fixed height for desktop
 	}
 
 	$effect(() => {
-		if (!graphsContainer) return;
+		if (!mainContainer) return;
 
 		const onResize = () => {
 			// Small delay to ensure DOM has updated
-			requestAnimationFrame(() => calculateGraphHeights());
+			requestAnimationFrame(() => calculatePageScale());
 		};
 
 		// Initial calculation
-		calculateGraphHeights();
+		calculatePageScale();
 
 		// Listen to window resize
 		window.addEventListener("resize", onResize);
 
-		// Also use ResizeObserver for more reliable detection
-		const resizeObserver = new ResizeObserver(() => {
-			requestAnimationFrame(() => calculateGraphHeights());
-		});
-		resizeObserver.observe(graphsContainer);
-
 		return () => {
 			window.removeEventListener("resize", onResize);
-			resizeObserver.disconnect();
 		};
 	});
 </script>
@@ -124,7 +113,7 @@
 
 <h1>Evaporation-Powered Engine Power Analysis</h1>
 
-<section class="layout">
+<section class="layout" bind:this={mainContainer}>
 	<div class="sidebar">
 		<RangeWithAxis
 			label="Radiation"
@@ -164,36 +153,56 @@
 		/>
 	</div>
 	<div class="main">
-		<div class="graphs-stack" bind:this={graphsContainer}>
-			<div
-				class="graph-item first-graph"
-				style={`height: ${individualGraphHeight}px`}
-			>
-				<Graph
-					title="Total Latent Energy"
-					units="W/m²"
-					yAxisMax={1750}
-					fillColor="#e74c3c"
-					currentValue={totalLatentEnergy}
+		<div class="content-rows">
+			<div class="top-row">
+				<img
+					src={evapotranspirationImage}
+					alt="Evapotranspiration Cycle"
+					class="row-image"
 				/>
+				<div
+					class="graph-item"
+					style={`height: ${individualGraphHeight}px`}
+				>
+					<Graph
+						title="Total Latent Energy"
+						units="W/m²"
+						yAxisMax={1750}
+						fillColor="#e74c3c"
+						currentValue={totalLatentEnergy}
+					/>
+				</div>
+				<div
+					class="graph-item"
+					style={`height: ${individualGraphHeight}px`}
+				>
+					<Graph
+						title="Daily Evaporation"
+						units="mm/day"
+						yAxisMax={60}
+						fillColor="#3498db"
+						currentValue={evaporationRate}
+					/>
+				</div>
 			</div>
-			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
-				<Graph
-					title="Daily Evaporation"
-					units="mm/day"
-					yAxisMax={60}
-					fillColor="#3498db"
-					currentValue={evaporationRate}
+			<div class="bottom-row">
+				<img
+					src={engineImage}
+					alt="Evaporation Energy Harvesting System"
+					class="row-image"
 				/>
-			</div>
-			<div class="graph-item" style={`height: ${individualGraphHeight}px`}>
-				<Graph
-					title="Maximum Engine Power"
-					units="W/m²"
-					yAxisMax={300}
-					fillColor="#2ecc71"
-					currentValue={maxEnginePower}
-				/>
+				<div
+					class="graph-item"
+					style={`height: ${individualGraphHeight}px`}
+				>
+					<Graph
+						title="Maximum Engine Power"
+						units="W/m²"
+						yAxisMax={300}
+						fillColor="#2ecc71"
+						currentValue={maxEnginePower}
+					/>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -210,10 +219,11 @@
 
 	.layout {
 		display: grid;
-		grid-template-columns: 300px minmax(0, 1fr);
+		grid-template-columns: 300px 1080px; /* Fixed width for desktop scaling */
 		gap: 12px;
 		align-items: start;
-		width: 100%;
+		width: 1400px; /* Fixed total width */
+		height: 900px; /* Fixed total height */
 		box-sizing: border-box;
 	}
 
@@ -233,24 +243,40 @@
 		box-sizing: border-box;
 	}
 
-	.graphs-stack {
+	.content-rows {
 		display: flex;
 		flex-direction: column;
-		gap: 12px;
-		/* Remove any height constraints - let individual graphs determine total height */
+		height: 100%;
+		gap: 20px;
+		padding: 16px 0;
+	}
+
+	.top-row,
+	.bottom-row {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 360px; /* Fixed height for desktop scaling */
+		gap: 16px;
+	}
+
+	.row-image {
+		height: 80%;
+		max-height: 250px;
+		width: auto;
+		object-fit: contain;
+		border-radius: 8px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		flex-shrink: 0;
 	}
 
 	.graph-item {
 		display: flex;
 		flex-direction: column;
-		width: 100%;
+		width: 280px; /* 3:5 aspect ratio - if height is ~250px, width should be ~150px for content + margins */
+		max-width: 320px;
 		box-sizing: border-box;
-		flex-shrink: 0; /* Prevent shrinking below set height - critical for preventing overlap */
-	}
-
-	/* First graph gets top padding to align with sidebar */
-	.first-graph :global(.graph-container) {
-		padding-top: 16px;
+		flex-shrink: 0;
 	}
 
 	/* Ensure Graph component fills the available space */
@@ -274,8 +300,33 @@
 
 	@media (max-width: 800px) {
 		.layout {
-			grid-template-columns: 1fr;
+			grid-template-columns: 1fr; /* Flexible for mobile */
 			gap: 16px;
+			width: 100%; /* Flexible width for mobile */
+			height: auto; /* Flexible height for mobile */
+		}
+
+		.content-rows {
+			height: auto; /* Flexible height for mobile */
+		}
+
+		.top-row,
+		.bottom-row {
+			flex-direction: column;
+			height: auto; /* Flexible height for mobile */
+			min-height: 200px;
+			gap: 16px;
+			padding: 16px;
+		}
+
+		.row-image {
+			height: 150px;
+			max-height: 150px;
+		}
+
+		.graph-item {
+			width: 100%;
+			max-width: none;
 		}
 	}
 </style>
