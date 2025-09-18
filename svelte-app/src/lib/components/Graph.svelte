@@ -187,6 +187,9 @@
 <style>
 	.graph-container {
 		height: 100%;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
 		box-sizing: border-box;
 		border: 1px solid var(--border-primary);
 		padding: 8px;
@@ -200,12 +203,14 @@
 		color: var(--text-primary);
 		text-align: center;
 		flex-shrink: 0;
+		align-self: flex-start;
 	}
 
 	.chart {
 		display: block;
 		width: 100%;
-		height: calc(100% - 30px); /* Subtract title height + margin */
+		flex: 1;
+		align-self: flex-end;
 		box-sizing: border-box;
 		padding: 0;
 	}
