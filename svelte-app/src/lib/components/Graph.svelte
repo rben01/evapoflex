@@ -28,10 +28,9 @@
 	let valueBar: D3Selection<SVGRectElement>;
 	let valueLabel: D3Selection<SVGTextElement>;
 	let yAxis: D3Selection<SVGGElement>;
-	let yTitle: D3Selection<SVGTextElement>;
 
 	// Derived layout values
-	const margin = { top: 4, right: 12, bottom: 20, left: 55 };
+	const margin = { top: 4, right: 12, bottom: 20, left: 35 };
 	const innerWidth = $derived(width - margin.left - margin.right);
 	const innerHeight = $derived(height - margin.top - margin.bottom);
 	const x = $derived(d3.scaleLinear().domain([0, 1]).range([0, innerWidth]));
@@ -116,14 +115,6 @@
 
 		yAxis = g.append("g").attr("class", "y-axis");
 
-		// Y-axis title
-		yTitle = g
-			.append("text")
-			.attr("class", "y-title")
-			.attr("text-anchor", "middle")
-			.attr("fill", "var(--text-primary)")
-			.style("font-size", "13px")
-			.style("font-weight", 600);
 
 		// Create dynamic elements
 		valueBar = g
@@ -168,13 +159,6 @@
 		const yAxisGenerator = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
 		yAxis.call(yAxisGenerator);
 
-		// Update y-axis title position
-		yTitle
-			.attr(
-				"transform",
-				`translate(${-margin.left + 8}, ${innerHeight / 2}) rotate(-90)`,
-			)
-			.text(`${title} (${units})`);
 	});
 
 	// Data updates (when value or color changes)
@@ -198,6 +182,7 @@
 </script>
 
 <div class="graph-container">
+	<h3 class="graph-title">{title} ({units})</h3>
 	<div bind:this={container} class="chart"></div>
 </div>
 
@@ -208,15 +193,26 @@
 		display: flex;
 		flex-direction: column;
 		box-sizing: border-box;
+		border: 1px solid var(--border-primary);
+		padding: 8px;
+	}
+
+	.graph-title {
+		margin: 0 0 8px 0;
+		padding: 0;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--text-primary);
+		text-align: center;
+		flex-shrink: 0;
 	}
 
 	.chart {
 		display: block;
 		width: 100%;
-		height: 100%;
+		height: calc(100% - 30px); /* Subtract title height + margin */
 		box-sizing: border-box;
-		border: 1px solid var(--border-primary);
-		padding: 8px 0 0 0;
+		padding: 0;
 	}
 
 	/* basic axis styling */
