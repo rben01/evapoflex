@@ -49,6 +49,40 @@
 	);
 	const clamped = $derived(Math.max(0, Math.min(currentValue ?? 0, yMax)));
 
+	// Function to detect current page scale for font sizing
+	const getCurrentScale = () => {
+		const layoutElement = document.querySelector(".layout");
+		if (layoutElement) {
+			const transform = (layoutElement as HTMLElement).style.transform;
+			if (transform && transform.includes("scale")) {
+				const match = transform.match(/scale\(([^)]+)\)/);
+				return match ? parseFloat(match[1]) : 1;
+			}
+		}
+		return 1;
+	};
+
+	// Function to update font sizes based on current scale
+	const updateFontSizes = () => {
+		const scale = getCurrentScale();
+		const baseLabelSize = 12;
+		const baseAxisSize = 11;
+
+		const scaledLabelSize = baseLabelSize * scale;
+		const scaledAxisSize = baseAxisSize * scale;
+
+		// Update value label font size
+		if (valueLabel) {
+			valueLabel.style("font-size", `${scaledLabelSize}px`);
+		}
+
+		// Update CSS custom property for axis text
+		document.documentElement.style.setProperty(
+			"--axis-font-size",
+			`${scaledAxisSize}px`,
+		);
+	};
+
 	// ResizeObserver to keep SVG sized to its container at all times
 	$effect(() => {
 		if (!container) return;
@@ -71,7 +105,10 @@
 
 		// Watch container for size changes
 		const resizeObserver = new ResizeObserver(() => {
-			requestAnimationFrame(updateSVGSize);
+			requestAnimationFrame(() => {
+				updateSVGSize();
+				updateFontSizes();
+			});
 		});
 
 		resizeObserver.observe(container);
@@ -119,8 +156,7 @@
 			.append("text")
 			.attr("class", "value-label")
 			.attr("text-anchor", "middle")
-			.attr("fill", "var(--text-primary)")
-			.style("font-size", "12px");
+			.attr("fill", "var(--text-primary)");
 
 		return () => {
 			if (svg) svg.remove();
@@ -151,6 +187,9 @@
 		}
 		const yAxisGenerator = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
 		yAxis.call(yAxisGenerator);
+
+		// Update font sizes based on current scale
+		updateFontSizes();
 	});
 
 	// Data updates (when value or color changes)
@@ -221,7 +260,7 @@
 	:global(.x-axis text),
 	:global(.y-axis text) {
 		fill: var(--text-secondary);
-		font-size: 11px;
+		font-size: var(--axis-font-size, 11px);
 	}
 	:global(.y-title) {
 		dominant-baseline: middle;
