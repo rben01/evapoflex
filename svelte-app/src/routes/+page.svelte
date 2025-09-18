@@ -31,7 +31,7 @@
 	const evaporationRate = $derived(
 		calculateEvaporationRate({
 			R_n: irradiance,
-			delta: delta,
+			delta,
 			u_a: windSpeedMps,
 			T_mean: airTemperatureK,
 			relHum: relativeHumidityFraction,
@@ -151,20 +151,20 @@
 				</figure>
 				<div class="graph-item">
 					<Graph
-						title="Total Latent Energy"
-						units="W/m²"
-						yAxisMax={1750}
-						fillColor="#e74c3c"
-						currentValue={totalLatentEnergy}
-					/>
-				</div>
-				<div class="graph-item">
-					<Graph
 						title="Daily Evaporation"
 						units="mm/day"
 						yAxisMax={60}
 						fillColor="#3498db"
 						currentValue={evaporationRate}
+					/>
+				</div>
+				<div class="graph-item">
+					<Graph
+						title="Total Latent Energy"
+						units="W/m²"
+						yAxisMax={1750}
+						fillColor="#e74c3c"
+						currentValue={totalLatentEnergy}
 					/>
 				</div>
 			</div>

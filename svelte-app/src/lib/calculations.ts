@@ -126,7 +126,8 @@ export function calculateSaturationVaporPressure(
 }
 
 /**
- * Calculate the slope of saturation vapor pressure curve (delta) using de_s/dT = L_v(T)*e_s / (R_v * T^2).
+ * Calculate the slope of saturation vapor pressure curve (delta) using
+ * `Delta := de_s/dT = L_v(T)*e_s / (R_v * T^2)`
  *
  * @param T - temperature (K)
  * @param e_s - saturation vapor pressure (kPa)
