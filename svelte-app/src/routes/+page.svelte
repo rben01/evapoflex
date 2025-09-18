@@ -160,7 +160,7 @@
 				</div>
 				<div class="graph-item">
 					<Graph
-						title="Total Latent Power"
+						title="Latent Power"
 						units="W/m²"
 						yAxisMax={1750}
 						fillColor="#e74c3c"
