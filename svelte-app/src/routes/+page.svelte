@@ -131,7 +131,7 @@
 			units="W/m²"
 			min={0}
 			max={1000}
-			step={25}
+			step={5}
 			bind:value={irradiance}
 			format={fmt}
 		/>
