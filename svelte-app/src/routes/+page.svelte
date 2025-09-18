@@ -59,7 +59,6 @@
 
 	// Page scaling for desktop, flexible layout for mobile
 	let mainContainer: HTMLElement;
-	let individualGraphHeight = $state(250); // Fixed height for desktop
 
 	function calculatePageScale() {
 		if (!mainContainer) return;
@@ -70,7 +69,6 @@
 			// Remove any scaling, let CSS media queries handle mobile layout
 			mainContainer.style.transform = "none";
 			mainContainer.style.transformOrigin = "unset";
-			individualGraphHeight = 200; // Smaller graphs for mobile
 			return;
 		}
 
@@ -83,7 +81,6 @@
 
 		mainContainer.style.transform = `scale(${scale})`;
 		mainContainer.style.transformOrigin = "top left";
-		individualGraphHeight = 250; // Fixed height for desktop
 	}
 
 	$effect(() => {
@@ -154,16 +151,13 @@
 	</div>
 	<div class="main">
 		<div class="content-rows">
-			<div class="top-row">
+			<div class="row top-row">
 				<img
 					src={evapotranspirationImage}
 					alt="Evapotranspiration Cycle"
 					class="row-image"
 				/>
-				<div
-					class="graph-item"
-					style={`height: ${individualGraphHeight}px`}
-				>
+				<div class="graph-item">
 					<Graph
 						title="Total Latent Energy"
 						units="W/m²"
@@ -172,10 +166,7 @@
 						currentValue={totalLatentEnergy}
 					/>
 				</div>
-				<div
-					class="graph-item"
-					style={`height: ${individualGraphHeight}px`}
-				>
+				<div class="graph-item">
 					<Graph
 						title="Daily Evaporation"
 						units="mm/day"
@@ -185,16 +176,13 @@
 					/>
 				</div>
 			</div>
-			<div class="bottom-row">
+			<div class="row bottom-row">
 				<img
 					src={engineImage}
 					alt="Evaporation Energy Harvesting System"
 					class="row-image"
 				/>
-				<div
-					class="graph-item"
-					style={`height: ${individualGraphHeight}px`}
-				>
+				<div class="graph-item">
 					<Graph
 						title="Maximum Engine Power"
 						units="W/m²"
@@ -251,32 +239,29 @@
 		padding: 16px 0;
 	}
 
-	.top-row,
-	.bottom-row {
+	.row {
 		display: flex;
 		justify-content: center;
-		align-items: center;
+		align-items: stretch;
 		height: 360px; /* Fixed height for desktop scaling */
 		gap: 16px;
 	}
 
 	.row-image {
-		height: 80%;
-		max-height: 250px;
 		width: auto;
 		object-fit: contain;
 		border-radius: 8px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-		flex-shrink: 0;
+		min-width: 0;
 	}
 
 	.graph-item {
 		display: flex;
 		flex-direction: column;
-		width: 280px; /* 3:5 aspect ratio - if height is ~250px, width should be ~150px for content + margins */
-		max-width: 320px;
+		aspect-ratio: 3 / 5;
+		height: 100%;
 		box-sizing: border-box;
-		flex-shrink: 0;
+		min-width: 0;
 	}
 
 	/* Ensure Graph component fills the available space */
@@ -310,8 +295,7 @@
 			height: auto; /* Flexible height for mobile */
 		}
 
-		.top-row,
-		.bottom-row {
+		.row {
 			flex-direction: column;
 			height: auto; /* Flexible height for mobile */
 			min-height: 200px;
