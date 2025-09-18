@@ -115,7 +115,6 @@
 
 		yAxis = g.append("g").attr("class", "y-axis");
 
-
 		// Create dynamic elements
 		valueBar = g
 			.append("rect")
@@ -158,7 +157,6 @@
 		}
 		const yAxisGenerator = d3.axisLeft(y).tickValues(yTicks).tickSizeOuter(0);
 		yAxis.call(yAxisGenerator);
-
 	});
 
 	// Data updates (when value or color changes)
@@ -189,9 +187,6 @@
 <style>
 	.graph-container {
 		height: 100%;
-		width: 100%;
-		display: flex;
-		flex-direction: column;
 		box-sizing: border-box;
 		border: 1px solid var(--border-primary);
 		padding: 8px;

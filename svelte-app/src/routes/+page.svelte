@@ -152,11 +152,12 @@
 	<div class="main">
 		<div class="content-rows">
 			<div class="row top-row">
-				<img
-					src={evapotranspirationImage}
-					alt="Evapotranspiration Cycle"
-					class="row-image"
-				/>
+				<figure class="row-image">
+					<img
+						src={evapotranspirationImage}
+						alt="Evapotranspiration Cycle"
+					/>
+				</figure>
 				<div class="graph-item">
 					<Graph
 						title="Total Latent Energy"
@@ -177,11 +178,12 @@
 				</div>
 			</div>
 			<div class="row bottom-row">
-				<img
-					src={engineImage}
-					alt="Evaporation Energy Harvesting System"
-					class="row-image"
-				/>
+				<div class="row-image">
+					<img
+						src={engineImage}
+						alt="Evaporation Energy Harvesting System"
+					/>
+				</div>
 				<div class="graph-item">
 					<Graph
 						title="Maximum Engine Power"
@@ -248,34 +250,22 @@
 	}
 
 	.row-image {
-		width: auto;
-		object-fit: contain;
+		margin: 0;
 		border-radius: 8px;
 		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-		min-width: 0;
+		display: inline-block;
+		height: 100%;
+	}
+
+	.row-image img {
+		object-fit: contain;
+		height: 100%;
+		width: auto;
 	}
 
 	.graph-item {
-		display: flex;
-		flex-direction: column;
 		aspect-ratio: 3 / 5;
-		height: 100%;
-		box-sizing: border-box;
 		min-width: 0;
-	}
-
-	/* Ensure Graph component fills the available space */
-	.graph-item :global(.graph-container) {
-		height: 100%;
-		display: flex;
-		flex-direction: column;
-		box-sizing: border-box;
-	}
-
-	.graph-item :global(.chart) {
-		flex: 1;
-		width: 100%;
-		box-sizing: border-box;
 	}
 
 	/* Remove space after the last slider */
