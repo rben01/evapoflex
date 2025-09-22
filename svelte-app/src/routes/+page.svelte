@@ -143,7 +143,7 @@
 	<div class="main">
 		<div class="content-rows">
 			<div class="row top-row">
-				<figure class="row-image">
+				<figure class="row-image top-image">
 					<img
 						src={evapotranspirationImage}
 						alt="Evapotranspiration Cycle"
@@ -238,6 +238,10 @@
 		align-items: stretch;
 		height: 360px; /* Fixed height for desktop scaling */
 		gap: 16px;
+	}
+
+	.top-row {
+		border-top: 2px solid #0000;
 	}
 
 	.row-image {
