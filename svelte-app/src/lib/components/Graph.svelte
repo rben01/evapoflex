@@ -22,6 +22,19 @@
 	};
 	const { title, units, yAxisMax, fillColor, currentValue }: Props = $props();
 
+	// Function to detect current page scale for font sizing
+	function getCurrentScale() {
+		const layoutElement = document?.querySelector(".layout");
+		if (layoutElement) {
+			const transform = (layoutElement as HTMLElement).style.transform;
+			if (transform && transform.includes("scale")) {
+				const match = transform.match(/scale\(([^)]+)\)/);
+				return match ? parseFloat(match[1]) : 1;
+			}
+		}
+		return 1;
+	}
+
 	// Cache D3 selections for efficient updates
 	let svg: D3Selection<SVGSVGElement>;
 	let g: D3Selection<SVGGElement>;
@@ -30,7 +43,8 @@
 	let yAxis: D3Selection<SVGGElement>;
 
 	// Derived layout values
-	const margin = { top: 4, right: 12, bottom: 20, left: 35 };
+	let margin = { top: 4, right: 12, bottom: 20, left: 35 };
+
 	const innerWidth = $derived(width - margin.left - margin.right);
 	const innerHeight = $derived(height - margin.top - margin.bottom);
 	const x = $derived(d3.scaleLinear().domain([0, 1]).range([0, innerWidth]));
@@ -48,19 +62,6 @@
 		d3.scaleLinear().domain([0, yMax]).range([innerHeight, 0]),
 	);
 	const clamped = $derived(Math.max(0, Math.min(currentValue ?? 0, yMax)));
-
-	// Function to detect current page scale for font sizing
-	const getCurrentScale = () => {
-		const layoutElement = document.querySelector(".layout");
-		if (layoutElement) {
-			const transform = (layoutElement as HTMLElement).style.transform;
-			if (transform && transform.includes("scale")) {
-				const match = transform.match(/scale\(([^)]+)\)/);
-				return match ? parseFloat(match[1]) : 1;
-			}
-		}
-		return 1;
-	};
 
 	// Function to update font sizes based on current scale
 	const updateFontSizes = () => {
@@ -93,6 +94,35 @@
 			// Container size is what we use - padding and border handled by CSS
 			const newWidth = rect.width;
 			const newHeight = rect.height;
+
+			// Calculate proportional margins based on container size and scale
+			const scale = getCurrentScale();
+			const baseMarginPercent = {
+				top: 1,
+				right: 0.015,
+				bottom: 0.04,
+				left: 0.3,
+			};
+
+			// Apply scale factor and calculate pixel values
+			margin = {
+				top: Math.max(
+					2,
+					Math.min(newHeight * baseMarginPercent.top * scale, 8),
+				),
+				right: Math.max(
+					6,
+					Math.min(newWidth * baseMarginPercent.right * scale, 20),
+				),
+				bottom: Math.max(
+					12,
+					Math.min(newHeight * baseMarginPercent.bottom * scale, 40),
+				),
+				left: Math.max(
+					30,
+					Math.min(newWidth * baseMarginPercent.left * scale, 40),
+				),
+			};
 
 			// Only update if there's a meaningful change
 
@@ -213,7 +243,8 @@
 </script>
 
 <div class="graph-container">
-	<h3 class="graph-title">{title} ({units})</h3>
+	<h3 class="graph-title">{title}</h3>
+	<h4 class="graph-subtitle">({units})</h4>
 	<div bind:this={container} class="chart"></div>
 </div>
 
@@ -223,20 +254,25 @@
 		display: flex;
 		flex-direction: column;
 		justify-content: space-between;
+		align-items: center;
 		box-sizing: border-box;
 		border: 1px solid var(--border-primary);
 		padding: 8px;
 	}
 
 	.graph-title {
-		margin: 0 0 8px 0;
+		margin: 0 0 2px 0;
 		padding: 0;
 		font-size: 14px;
 		font-weight: 600;
 		color: var(--text-primary);
 		text-align: center;
 		flex-shrink: 0;
-		align-self: flex-start;
+	}
+
+	.graph-subtitle {
+		margin: 0 0 0 0;
+		font-size: 12px;
 	}
 
 	.chart {

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/robert/Downloads/Vörösmarty Weather Data/svelte-app/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
