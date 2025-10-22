@@ -104,7 +104,7 @@
 <section class="layout" bind:this={mainContainer}>
 	<div class="sidebar">
 		<RangeWithAxis
-			label="Radiation"
+			label="Net radiation"
 			units="W/m²"
 			min={0}
 			max={1000}
